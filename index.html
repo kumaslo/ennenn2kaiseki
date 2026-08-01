@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>炎炎ノ消防隊2 実戦支援アプリ</title>
+    <meta name="theme-color" content="#121212">
+    <style>
+        /* ==========================================
+           炎炎ノ消防隊2 実戦支援Webアプリ - スタイル
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0d0d0d;
+            color: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 100vh;
+            background-color: #141414;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        @media (min-width: 481px) {
+            .app-container {
+                border-radius: 16px;
+                height: 94vh;
+                max-height: 860px;
+            }
+        }
+
+        /* スマホを横画面（ランドスケープ）にしたときの最適化 */
+        @media (orientation: landscape) {
+            .app-container {
+                max-width: 100% !important;
+                height: 100% !important;
+                max-height: 100vh !important;
+                border-radius: 0 !important;
+            }
+            .app-main {
+                padding: 10px 16px !important;
+            }
+            /* 横画面時の実戦メモ内部レイアウト (active時のみflexを適用してバグを防止) */
+            #tab-memo.active {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            #tab-memo.active h2 {
+                width: 100%;
+                margin-bottom: 2px;
+            }
+            #tab-memo.active .form-group {
+                flex: 1 1 48%;
+                margin-bottom: 6px !important;
+                padding: 8px !important;
+            }
+            #tab-memo.active .calc-card {
+                flex: 1 1 48%;
+                margin-bottom: 6px !important;
+            }
+            #tab-memo.active #btn-save-memo {
+                width: 100%;
+            }
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #b22222, #ff4500);
+            color: #fff;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .app-header h1 {
+            font-size: 1.05rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .version-badge {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        /* メインスクロールエリア */
+        .app-main {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px;
+            padding-bottom: 20px;
+        }
+
+        /* 最下部固定タブバー */
+        .app-nav {
+            flex: 0 0 52px;
+            width: 100%;
+            background: #111;
+            display: flex;
+            border-top: 1px solid #222;
+            z-index: 10;
+        }
+        .nav-item {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 0.65rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .nav-item.active {
+            color: #ff4500;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-content h2 {
+            font-size: 1.05rem;
+            color: #ff4500;
+            margin-bottom: 12px;
+            border-left: 4px solid #ff4500;
+            padding-left: 8px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            background: #0a0a0a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #ff4500;
+            outline: none;
+        }
+        .form-group input[readonly] {
+            background: #161616;
+            color: #ff8c00;
+            font-weight: bold;
+            border-color: #333;
+        }
+
+        /* カウンター形式用スタイル */
+        .counter-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0a0a0a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .counter-btn {
+            background: #2a2a2a;
+            color: #fff;
+            border: none;
+            width: 44px;
+            height: 38px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .counter-btn:active {
+            background: #ff4500;
+        }
+        .counter-value {
+            flex: 1;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #fff;
+            background: transparent;
+            border: none;
+        }
+        .counter-value::-webkit-inner-spin-button,
+        .counter-value::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .quick-btn-container {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+        .quick-btn {
+            flex: 1;
+            background: #2a2a2a;
+            color: #ff8c00;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 5px 0;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .quick-btn:active {
+            background: #ff4500;
+            color: #fff;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #ff4500, #ff8c00);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-primary:active { opacity: 0.8; }
+        .btn-secondary {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-danger {
+            width: 100%;
+            padding: 10px;
+            background: #8b0000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .calc-card, .result-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .calc-card h3, .result-card h3 {
+            font-size: 0.85rem;
+            color: #ff8c00;
+            margin-bottom: 8px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+        .spec-table th, .spec-table td {
+            border: 1px solid #333;
+            padding: 5px;
+            text-align: center;
+        }
+        .spec-table th {
+            background: #222;
+            color: #ff8c00;
+        }
+        .highlight-spec {
+            background-color: rgba(255, 69, 0, 0.3) !important;
+            border: 1px solid #ff4500 !important;
+            font-weight: bold;
+        }
+        .inference-bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+        .inference-label {
+            width: 45px;
+            font-weight: bold;
+            color: #ff8c00;
+        }
+        .inference-bar-bg {
+            flex: 1;
+            background: #0a0a0a;
+            height: 14px;
+            border-radius: 7px;
+            overflow: hidden;
+            margin: 0 6px;
+            border: 1px solid #333;
+        }
+        .inference-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4500, #ff8c00);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .inference-pct {
+            width: 42px;
+            text-align: right;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="app-container">
+        <header class="app-header">
+            <h1>炎炎ノ消防隊2</h1>
+            <span class="version-badge">Ver.1.0.0</span>
+        </header>
+
+        <main class="app-main">
+            <section id="tab-memo" class="tab-content active">
+                <h2>実戦メモ ＆ 入力</h2>
+                
+                <div class="form-group">
+                    <label for="input-start-games">打ち始めゲーム数（手入力）</label>
+                    <input type="number" id="input-start-games" value="0" placeholder="例: 0">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-current-games">現在のゲーム数</label>
+                    <input type="number" id="input-current-games" placeholder="例: 3000">
+                    <div class="quick-btn-container">
+                        <button type="button" class="quick-btn" onclick="addCurrentGames(-100)">-100</button>
+                        <button type="button" class="quick-btn" onclick="addCurrentGames(-50)">-50</button>
+                        <button type="button" class="quick-btn" onclick="addCurrentGames(50)">+50</button>
+                        <button type="button" class="quick-btn" onclick="addCurrentGames(100)">+100</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="input-games">自分で打ったゲーム数（自動計算）</label>
+                    <input type="number" id="input-games" value="0" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>ボーナス初当り回数（自動合算）</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-bonus', -1)">-</button>
+                        <input type="number" id="input-bonus" class="counter-value" value="0" min="0" readonly>
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-bonus', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>炎炎激闘初当り回数</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-enjen', -1)">-</button>
+                        <input type="number" id="input-enjen" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-enjen', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>炎炎ボーナス回数</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-enren-bonus', -1)">-</button>
+                        <input type="number" id="input-enren-bonus" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-enren-bonus', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>アクセル・REG・灰焔ボーナス回数（合計）</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-accel-reg-bonus', -1)">-</button>
+                        <input type="number" id="input-accel-reg-bonus" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-accel-reg-bonus', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>ボーナス終了画面 履歴登録</label>
+                    <div style="margin-bottom: 8px;">
+                        <label for="input-bonus-type" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">① ボーナス種類を選択</label>
+                        <select id="input-bonus-type">
+                            <option value="炎炎ボーナス">炎炎ボーナス</option>
+                            <option value="アクセルボーナス">アクセルボーナス</option>
+                            <option value="レギュラーボーナス">レギュラーボーナス</option>
+                            <option value="灰焔ボーナス">灰焔ボーナス</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <label for="input-screen-type" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">② 終了画面を選択</label>
+                        <select id="input-screen-type">
+                            <option value="赤背景">赤背景</option>
+                            <option value="大笑い">大笑い</option>
+                            <option value="黒の女">黒の女</option>
+                            <option value="黒帯">黒帯</option>
+                            <option value="赤帯">赤帯</option>
+                            <option value="金帯">金帯</option>
+                        </select>
+                    </div>
+                    <button type="button" id="btn-add-screen-history" class="btn-primary" style="margin-top: 4px;">追加（ボーナス回数も自動加算）</button>
+                </div>
+
+                <div class="calc-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="margin-bottom: 0;">終了画面 履歴一覧</h3>
+                        <button type="button" id="btn-clear-screen-history" class="btn-danger" style="width: auto; padding: 4px 10px; font-size: 0.75rem; margin-top:0;">全削除</button>
+                    </div>
+                    <div id="screen-history-list" style="max-height: 150px; overflow-y: auto; font-size: 0.85rem;">
+                        <p style="color: #777; text-align: center; padding: 8px;">履歴はありません</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>REG中キャラ紹介 履歴登録（フィルター選択）</label>
+                    
+                    <div style="margin-bottom: 8px;">
+                        <label for="reg-filter-1" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">1人目</label>
+                        <select id="reg-filter-1" onchange="onRegFilterChange(1)">
+                            <option value="">-- 選択してください --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 8px;">
+                        <label for="reg-filter-2" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">2人目</label>
+                        <select id="reg-filter-2" onchange="onRegFilterChange(2)" disabled>
+                            <option value="">-- 先に1人目を選んでください --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 8px;">
+                        <label for="reg-filter-3" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">3人目</label>
+                        <select id="reg-filter-3" onchange="onRegFilterChange(3)" disabled>
+                            <option value="">-- 先に2人目を選んでください --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 8px;">
+                        <label for="input-reg-scenario" style="font-size:0.75rem; color:#ff8c00; margin-bottom:2px;"><strong>【自動特定されたシナリオ・示唆】</strong></label>
+                        <select id="input-reg-scenario" style="border-color: #ff4500;">
+                            <option value="">キャラを選ぶと自動で確定します</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="btn-add-reg-history" class="btn-primary" style="margin-top: 4px;">追加</button>
+                </div>
+
+                <div class="calc-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="margin-bottom: 0;">REG中キャラ紹介 履歴一覧</h3>
+                        <button type="button" id="btn-clear-reg-history" class="btn-danger" style="width: auto; padding: 4px 10px; font-size: 0.75rem; margin-top:0;">全削除</button>
+                    </div>
+                    <div id="reg-history-list" style="max-height: 150px; overflow-y: auto; font-size: 0.85rem;">
+                        <p style="color: #777; text-align: center; padding: 8px;">履歴はありません</p>
+                    </div>
+                </div>
+
+                <button id="btn-save-memo" class="btn-primary">データを保存</button>
+            </section>
+
+            <section id="tab-results" class="tab-content">
+                <h2>実戦結果 ＆ 分布集計</h2>
+                
+                <div class="calc-card">
+                    <h3>現在の実戦確率（自動計算）</h3>
+                    <div class="stat-row">
+                        <span>ボーナス初当り確率:</span>
+                        <strong id="calc-bonus-result">---</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>炎炎激闘初当り確率:</span>
+                        <strong id="calc-enjen-result">---</strong>
+                    </div>
+                </div>
+
+                <div class="calc-card">
+                    <h3>ボーナス終了画面 実戦の分布</h3>
+                    <div id="result-screen-distribution" style="font-size: 0.85rem;">
+                        <p style="color: #777; text-align: center; padding: 8px;">データがありません</p>
+                    </div>
+                </div>
+
+                <div class="calc-card">
+                    <h3>REG中キャラ紹介 実戦の分布</h3>
+                    <div id="result-reg-distribution" style="font-size: 0.85rem;">
+                        <p style="color: #777; text-align: center; padding: 8px;">データがありません</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-analysis" class="tab-content">
+                <h2>解析データ</h2>
+                <div class="analysis-list" id="analysis-container">
+                    <p class="loading-text">解析データを読み込み中...</p>
+                </div>
+            </section>
+
+            <section id="tab-inference" class="tab-content">
+                <h2>設定推測（簡易版）</h2>
+                
+                <div class="result-card" id="completeness-card" style="border-color: #ff4500; margin-bottom: 14px;">
+                    <h3 style="color: #ff4500; margin-bottom: 4px;">データ充実度</h3>
+                    <div id="completeness-stars" style="font-size: 1.3rem; letter-spacing: 2px; color: #ffaa00; margin-bottom: 2px;">★☆☆☆☆</div>
+                    <div id="completeness-score" style="font-size: 0.9rem; font-weight: bold; color: #fff; margin-bottom: 4px;">0点</div>
+                    <div id="completeness-message" style="font-size: 0.85rem; color: #ccc; margin-bottom: 8px;">データ不足</div>
+                    <div id="completeness-warnings" style="font-size: 0.8rem; color: #ff8c00; border-top: 1px solid #333; padding-top: 6px;"></div>
+                </div>
+
+                <div class="result-card" id="reliability-card" style="border-color: #ff4500;">
+                    <h3 style="color: #ff4500; margin-bottom: 6px;">推測信頼度</h3>
+                    <div id="reliability-stars" style="font-size: 1.3rem; letter-spacing: 2px; color: #ffaa00; margin-bottom: 4px;">★☆☆☆☆</div>
+                    <div id="reliability-games" style="font-size: 0.85rem; color: #ccc; margin-bottom: 6px;">通常ゲーム数：0G</div>
+                    <div id="reliability-message" style="font-size: 0.9rem; font-weight: bold; color: #fff;">データ不足</div>
+                </div>
+
+                <div class="result-card">
+                    <h3>設定推測確率（分布）</h3>
+                    <div id="inference-distribution-container" style="margin-top: 10px;">
+                        </div>
+                </div>
+            </section>
+
+            <section id="tab-settings" class="tab-content">
+                <h2>設定・データ管理</h2>
+                <button id="btn-export" class="btn-secondary">データエクスポート</button>
+                <button id="btn-reset" class="btn-danger">全データリセット</button>
+            </section>
+        </main>
+
+        <nav class="app-nav">
+            <button class="nav-item active" data-target="tab-memo">実戦メモ</button>
+            <button class="nav-item" data-target="tab-results">実戦結果</button>
+            <button class="nav-item" data-target="tab-analysis">解析</button>
+            <button class="nav-item" data-target="tab-inference">設定推測</button>
+            <button class="nav-item" data-target="tab-settings">設定</button>
+        </nav>
+    </div>
+
+    <script>
+        /* ==========================================
+           アプリ用データおよびスクリプト (Ver.1.0.0)
+           ========================================== */
+        const APP_DATA = {
+            machineName: "L 炎炎ノ消防隊2",
+            specs: {
+                setting: [1, 2, 3, 4, 5, 6],
+                bonusProb: [272.0, 269.0, 257.0, 242.0, 236.0, 227.0],
+                enjenProb: [684.0, 662.0, 617.0, 546.0, 518.0, 486.0],
+                payout: [97.7, 98.8, 101.2, 105.6, 110.2, 114.9]
+            },
+            regCharacters: [
+                { scenario: "第8①", chars: "シンラ / アーサー / タマキ / マキ / ヒナワ", charList: ["シンラ", "アーサー", "タマキ", "マキ", "ヒナワ"], suggestion: "デフォルト", rawRates: [0.43, 0.405, 0.38, 0.385, 0.355, 0.305], rates: ["約43.0%", "約40.5%", "約38.0%", "約38.5%", "約35.5%", "約30.5%"] },
+                { scenario: "第8②", chars: "シンラ / リヒト / ヴァルカン / アイリス / オウビ", charList: ["シンラ", "リヒト", "ヴァルカン", "アイリス", "オウビ"], suggestion: "偶数設定示唆", rawRates: [0.15, 0.20, 0.10, 0.20, 0.10, 0.20], rates: ["約15.0%", "約20.0%", "約10.0%", "約20.0%", "約10.0%", "約20.0%"] },
+                { scenario: "第8③", chars: "シンラ / リヒト / ヴァルカン / マキ / 紅丸", charList: ["シンラ", "リヒト", "ヴァルカン", "マキ", "紅丸"], suggestion: "設定4以上", rawRates: [0.001, 0.001, 0.001, 0.01, 0.01, 0.005], rates: ["-", "-", "-", "約1.0%", "約1.0%", "約0.5%"] },
+                { scenario: "第8④", chars: "シンラ / リヒト / ヴァルカン / アイリス / 金象", charList: ["シンラ", "リヒト", "ヴァルカン", "アイリス", "金象"], suggestion: "設定6", rawRates: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01], rates: ["-", "-", "-", "-", "-", "約1.0%"] },
+                { scenario: "伝導者①", chars: "ジョヴァンニ / カロン / ハウメア / フレイル / インカ", charList: ["ジョヴァンニ", "カロン", "ハウメア", "フレイル", "インカ"], suggestion: "奇数設定示唆", rawRates: [0.15, 0.10, 0.20, 0.10, 0.20, 0.10], rates: ["約15.0%", "約10.0%", "約20.0%", "約10.0%", "約20.0%", "約10.0%"] },
+                { scenario: "伝導者②", chars: "ジョヴァンニ / カロン / ハウメア / フレイル / オロチ", charList: ["ジョヴァンニ", "カロン", "ハウメア", "フレイル", "オロチ"], suggestion: "高設定示唆(弱)", rawRates: [0.05, 0.05, 0.05, 0.075, 0.075, 0.075], rates: ["約5.0%", "約5.0%", "約5.0%", "約7.5%", "約7.5%", "約7.5%"] },
+                { scenario: "伝導者③", chars: "ジョヴァンニ / カロン / ハウメア / フレイル / リツ", charList: ["ジョヴァンニ", "カロン", "ハウメア", "フレイル", "リツ"], suggestion: "高設定示唆(強)", rawRates: [0.01, 0.01, 0.01, 0.05, 0.05, 0.05], rates: ["約1.0%", "約1.0%", "約1.0%", "約5.0%", "約5.0%", "約5.0%"] },
+                { scenario: "伝導者④", chars: "ジョヴァンニ / カロン / ハウメア / フレイル / 金象", charList: ["ジョヴァンニ", "カロン", "ハウメア", "フレイル", "金象"], suggestion: "設定5以上", rawRates: [0.001, 0.001, 0.001, 0.001, 0.005, 0.01], rates: ["-", "-", "-", "-", "約0.5%", "約1.0%"] },
+                { scenario: "まもるくん1人目", chars: "まもるくん / オウビ / インカ / アーグ / バーンズ", charList: ["まもるくん", "オウビ", "インカ", "アーグ", "バーンズ"], suggestion: "設定1否定", rawRates: [0.001, 0.10, 0.10, 0.04, 0.04, 0.04], rates: ["-", "約10.0%", "約10.0%", "約4.0%", "約4.0%", "約4.0%"] },
+                { scenario: "まもるくん2人目", chars: "アイリス / まもるくん / インカ / アーグ / バーンズ", charList: ["アイリス", "まもるくん", "インカ", "アーグ", "バーンズ"], suggestion: "設定2否定", rawRates: [0.075, 0.001, 0.10, 0.04, 0.04, 0.04], rates: ["約7.5%", "-", "約10.0%", "約4.0%", "約4.0%", "約4.0%"] },
+                { scenario: "まもるくん3人目", chars: "アイリス / オウビ / まもるくん / アーグ / バーンズ", charList: ["アイリス", "オウビ", "まもるくん", "アーグ", "バーンズ"], suggestion: "設定3否定", rawRates: [0.075, 0.075, 0.001, 0.04, 0.04, 0.04], rates: ["約7.5%", "約7.5%", "-", "約4.0%", "約4.0%", "約4.0%"] },
+                { scenario: "まもるくん4人目", chars: "アイリス / オウビ / インカ / まもるくん / バーンズ", charList: ["アイリス", "オウビ", "インカ", "まもるくん", "バーンズ"], suggestion: "設定4否定", rawRates: [0.03, 0.03, 0.03, 0.001, 0.075, 0.04], rates: ["約3.0%", "約3.0%", "約3.0%", "-", "約7.5%", "約4.0%"] },
+                { scenario: "まもるくん5人目", chars: "アイリス / オウビ / インカ / アーグ / まもるくん", charList: ["アイリス", "オウビ", "インカ", "アーグ", "まもるくん"], suggestion: "設定5否定", rawRates: [0.03, 0.03, 0.03, 0.05, 0.001, 0.075], rates: ["約3.0%", "約3.0%", "約3.0%", "約5.0%", "-", "約7.5%"] },
+                { scenario: "アイリス(全赤)", chars: "アイリス / オウビ / インカ / アーグ / バーンズ", charList: ["アイリス", "オウビ", "インカ", "アーグ", "バーンズ"], suggestion: "設定6", rawRates: [0.001, 0.001, 0.001, 0.001, 0.001, 0.005], rates: ["-", "-", "-", "-", "-", "約0.5%"] },
+                { scenario: "大隊長", chars: "ジョヴァンニ / オウビ / アーグ / バーンズ / 紅丸", charList: ["ジョヴァンニ", "オウビ", "アーグ", "バーンズ", "紅丸"], suggestion: "設定4以上", rawRates: [0.001, 0.001, 0.001, 0.01, 0.01, 0.005], rates: ["-", "-", "-", "約1.0%", "約1.0%", "約0.5%"] }
+            ],
+            screenAnalysis: {
+                screenNames: ["赤背景", "大笑い", "黒の女", "黒帯", "赤帯", "金帯"],
+                enrenRawRates: [
+                    [0.86, 0.84, 0.83, 0.76, 0.73, 0.70],
+                    [0.11, 0.12, 0.13, 0.14, 0.16, 0.17],
+                    [0.03, 0.04, 0.04, 0.05, 0.06, 0.07],
+                    [0.0001, 0.0001, 0.0001, 0.05, 0.03, 0.03],
+                    [0.0001, 0.0001, 0.0001, 0.0001, 0.02, 0.02],
+                    [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.01]
+                ],
+                enrenRates: [
+                    ["86%", "84%", "83%", "76%", "73%", "70%"],
+                    ["11%", "12%", "13%", "14%", "16%", "17%"],
+                    ["3%", "4%", "4%", "5%", "6%", "7%"],
+                    ["-", "-", "-", "5%", "3%", "3%"],
+                    ["-", "-", "-", "-", "2%", "2%"],
+                    ["-", "-", "-", "-", "-", "1%"]
+                ],
+                accelRawRates: [
+                    [0.77, 0.74, 0.71, 0.63, 0.59, 0.55],
+                    [0.20, 0.22, 0.24, 0.26, 0.28, 0.30],
+                    [0.03, 0.04, 0.05, 0.06, 0.08, 0.09],
+                    [0.0001, 0.0001, 0.0001, 0.05, 0.03, 0.03],
+                    [0.0001, 0.0001, 0.0001, 0.0001, 0.02, 0.02],
+                    [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.01]
+                ],
+                accelRates: [
+                    ["77%", "74%", "71%", "63%", "59%", "55%"],
+                    ["20%", "22%", "24%", "26%", "28%", "30%"],
+                    ["3%", "4%", "5%", "6%", "8%", "9%"],
+                    ["-", "-", "-", "5%", "3%", "3%"],
+                    ["-", "-", "-", "-", "2%", "2%"],
+                    ["-", "-", "-", "-", "-", "1%"]
+                ]
+            }
+        };
+
+        let bonusScreenHistory = [];
+        let regHistory = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            initRegFilters();
+            loadMemoData();
+            renderAnalysisData();
+            setupEventListeners();
+            updateCalculatedGames();
+            updateCompleteness();
+            updateResultDistributions();
+        });
+
+        function initRegFilters() {
+            const select1 = document.getElementById('reg-filter-1');
+            if (!select1) return;
+
+            const firstChars = [...new Set(APP_DATA.regCharacters.map(item => item.charList[0]))];
+            
+            select1.innerHTML = '<option value="">-- 1人目を選んでください --</option>';
+            firstChars.forEach(char => {
+                const opt = document.createElement('option');
+                opt.value = char;
+                opt.textContent = char;
+                select1.appendChild(opt);
+            });
+
+            resetRegFilters(2);
+            resetRegFilters(3);
+            updateAutoScenario();
+        }
+
+        function onRegFilterChange(step) {
+            const char1 = document.getElementById('reg-filter-1').value;
+            const char2 = document.getElementById('reg-filter-2').value;
+            const char3 = document.getElementById('reg-filter-3').value;
+
+            if (step === 1) {
+                const select2 = document.getElementById('reg-filter-2');
+                if (!char1) {
+                    select2.innerHTML = '<option value="">-- 先に1人目を選んでください --</option>';
+                    select2.disabled = true;
+                    resetRegFilters(3);
+                } else {
+                    const matched = APP_DATA.regCharacters.filter(item => item.charList[0] === char1);
+                    const secondChars = [...new Set(matched.map(item => item.charList[1]))];
+                    
+                    select2.innerHTML = '<option value="">-- 2人目を選んでください --</option>';
+                    secondChars.forEach(char => {
+                        const opt = document.createElement('option');
+                        opt.value = char;
+                        opt.textContent = char;
+                        select2.appendChild(opt);
+                    });
+                    select2.disabled = false;
+                    resetRegFilters(3);
+                }
+            } else if (step === 2) {
+                const select3 = document.getElementById('reg-filter-3');
+                if (!char2) {
+                    select3.innerHTML = '<option value="">-- 先に2人目を選んでください --</option>';
+                    select3.disabled = true;
+                } else {
+                    const matched = APP_DATA.regCharacters.filter(item => item.charList[0] === char1 && item.charList[1] === char2);
+                    const thirdChars = [...new Set(matched.map(item => item.charList[2]))];
+                    
+                    select3.innerHTML = '<option value="">-- 3人目を選んでください --</option>';
+                    thirdChars.forEach(char => {
+                        const opt = document.createElement('option');
+                        opt.value = char;
+                        opt.textContent = char;
+                        select3.appendChild(opt);
+                    });
+                    select3.disabled = false;
+                }
+            }
+
+            updateAutoScenario();
+        }
+
+        function resetRegFilters(step) {
+            if (step === 2) {
+                const s2 = document.getElementById('reg-filter-2');
+                s2.innerHTML = '<option value="">-- 先に1人目を選んでください --</option>';
+                s2.disabled = true;
+            }
+            if (step === 3) {
+                const s3 = document.getElementById('reg-filter-3');
+                s3.innerHTML = '<option value="">-- 先に2人目を選んでください --</option>';
+                s3.disabled = true;
+            }
+        }
+
+        function updateAutoScenario() {
+            const char1 = document.getElementById('reg-filter-1').value;
+            const char2 = document.getElementById('reg-filter-2').value;
+            const char3 = document.getElementById('reg-filter-3').value;
+            const scenarioSelect = document.getElementById('input-reg-scenario');
+
+            scenarioSelect.innerHTML = "";
+
+            if (!char1) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "キャラを選ぶと自動で確定します";
+                scenarioSelect.appendChild(opt);
+                return;
+            }
+
+            let matched = APP_DATA.regCharacters.filter(item => item.charList[0] === char1);
+            if (char2) matched = matched.filter(item => item.charList[1] === char2);
+            if (char3) matched = matched.filter(item => item.charList[2] === char3);
+
+            if (matched.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "該当するシナリオがありません";
+                scenarioSelect.appendChild(opt);
+            } else {
+                matched.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.scenario;
+                    opt.textContent = `${item.scenario} [${item.chars}] → 示唆: ${item.suggestion}`;
+                    scenarioSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function adjustCounter(elementId, amount) {
+            const input = document.getElementById(elementId);
+            if (!input) return;
+            let currentVal = parseInt(input.value) || 0;
+            currentVal += amount;
+            if (currentVal < 0) currentVal = 0;
+            input.value = currentVal;
+            calculateStats();
+            autoSaveMemo();
+        }
+
+        function addCurrentGames(amount) {
+            const input = document.getElementById('input-current-games');
+            if (!input) return;
+            let currentVal = parseInt(input.value) || 0;
+            currentVal += amount;
+            if (currentVal < 0) currentVal = 0;
+            input.value = currentVal;
+            updateCalculatedGames();
+        }
+
+        function updateCalculatedGames() {
+            const startGames = parseInt(document.getElementById('input-start-games').value) || 0;
+            const currentGames = parseInt(document.getElementById('input-current-games').value) || 0;
+            const selfGamesInput = document.getElementById('input-games');
+            
+            let diff = currentGames - startGames;
+            if (diff < 0) diff = 0;
+            
+            if (selfGamesInput) {
+                selfGamesInput.value = diff;
+            }
+
+            calculateStats();
+            autoSaveMemo();
+            updateCompleteness();
+        }
+
+        function updateBonusTotal() {
+            const enren = parseInt(document.getElementById('input-enren-bonus').value) || 0;
+            const accelReg = parseInt(document.getElementById('input-accel-reg-bonus').value) || 0;
+            const totalInput = document.getElementById('input-bonus');
+            if (totalInput) {
+                totalInput.value = enren + accelReg;
+            }
+        }
+
+        function initTabs() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const targetId = item.getAttribute('data-target');
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    tabContents.forEach(tab => tab.classList.remove('active'));
+                    item.classList.add('active');
+                    document.getElementById(targetId).classList.add('active');
+                });
+            });
+        }
+
+        function loadMemoData() {
+            const savedData = localStorage.getItem('enjen2_memo');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    document.getElementById('input-start-games').value = data.startGames !== undefined ? data.startGames : 0;
+                    document.getElementById('input-current-games').value = data.currentGames !== undefined ? data.currentGames : '';
+                    document.getElementById('input-enjen').value = data.enjen !== undefined ? data.enjen : 0;
+                    document.getElementById('input-enren-bonus').value = data.enrenBonus !== undefined ? data.enrenBonus : 0;
+                    document.getElementById('input-accel-reg-bonus').value = data.accelRegBonus !== undefined ? data.accelRegBonus : 0;
+                    
+                    updateBonusTotal();
+                    updateCalculatedGames();
+
+                    if (data.bonusScreenHistory && Array.isArray(data.bonusScreenHistory)) {
+                        bonusScreenHistory = data.bonusScreenHistory;
+                    }
+                    renderScreenHistory();
+
+                    if (data.regHistory && Array.isArray(data.regHistory)) {
+                        regHistory = data.regHistory;
+                    }
+                    renderRegHistory();
+
+                    calculateStats();
+                    updateResultDistributions();
+                } catch (e) {
+                    console.error('データ読込エラー', e);
+                }
+            }
+        }
+
+        function autoSaveMemo() {
+            const data = {
+                startGames: document.getElementById('input-start-games').value,
+                currentGames: document.getElementById('input-current-games').value,
+                games: document.getElementById('input-games').value,
+                bonus: document.getElementById('input-bonus').value,
+                enjen: document.getElementById('input-enjen').value,
+                enrenBonus: document.getElementById('input-enren-bonus').value,
+                accelRegBonus: document.getElementById('input-accel-reg-bonus').value,
+                bonusScreenHistory: bonusScreenHistory,
+                regHistory: regHistory,
+                updatedAt: new Date().toLocaleString()
+            };
+            localStorage.setItem('enjen2_memo', JSON.stringify(data));
+        }
+
+        function renderScreenHistory() {
+            const container = document.getElementById('screen-history-list');
+            if (!container) return;
+
+            if (bonusScreenHistory.length === 0) {
+                container.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">履歴はありません</p>';
+                return;
+            }
+
+            let html = '';
+            bonusScreenHistory.forEach((item, index) => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #121212; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; border: 1px solid #2a2a2a;">
+                        <div>
+                            <span style="color: #ff4500; font-weight: bold; margin-right: 4px;">${index + 1}回目</span>
+                            <span style="color: #ff8c00; font-weight: bold; margin-right: 6px;">[${item.bonusType}]</span>
+                            <span>${item.screenType}</span>
+                        </div>
+                        <button type="button" onclick="removeScreenHistory(${index})" style="background: #333; color: #ff4500; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer;">削除</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function removeScreenHistory(index) {
+            const removed = bonusScreenHistory[index];
+            if (removed) {
+                if (removed.bonusType === "炎炎ボーナス") {
+                    const enrenInput = document.getElementById('input-enren-bonus');
+                    let val = parseInt(enrenInput.value) || 0;
+                    if (val > 0) enrenInput.value = val - 1;
+                } else {
+                    const accelInput = document.getElementById('input-accel-reg-bonus');
+                    let val = parseInt(accelInput.value) || 0;
+                    if (val > 0) accelInput.value = val - 1;
+                }
+                updateBonusTotal();
+            }
+
+            bonusScreenHistory.splice(index, 1);
+            renderScreenHistory();
+            autoSaveMemo();
+            updateCompleteness();
+            calculateStats();
+            updateResultDistributions();
+        }
+
+        function renderRegHistory() {
+            const container = document.getElementById('reg-history-list');
+            if (!container) return;
+
+            if (regHistory.length === 0) {
+                container.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">履歴はありません</p>';
+                return;
+            }
+
+            let html = '';
+            regHistory.forEach((item, index) => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #121212; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; border: 1px solid #2a2a2a;">
+                        <div>
+                            <span style="color: #ff4500; font-weight: bold; margin-right: 6px;">${index + 1}回目</span>
+                            <span>${item.scenario}</span>
+                        </div>
+                        <button type="button" onclick="removeRegHistory(${index})" style="background: #333; color: #ff4500; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer;">削除</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function removeRegHistory(index) {
+            regHistory.splice(index, 1);
+            renderRegHistory();
+            autoSaveMemo();
+            updateCompleteness();
+            updateInferenceDistribution();
+            updateResultDistributions();
+        }
+
+        function setupEventListeners() {
+            const saveBtn = document.getElementById('btn-save-memo');
+            const resetBtn = document.getElementById('btn-reset');
+            const addScreenBtn = document.getElementById('btn-add-screen-history');
+            const clearScreenBtn = document.getElementById('btn-clear-screen-history');
+            const addRegBtn = document.getElementById('btn-add-reg-history');
+            const clearRegBtn = document.getElementById('btn-clear-reg-history');
+            
+            const startGamesInput = document.getElementById('input-start-games');
+            const currentGamesInput = document.getElementById('input-current-games');
+            const bonusInputs = document.querySelectorAll('#input-bonus, #input-enjen, #input-enren-bonus, #input-accel-reg-bonus');
+
+            if (startGamesInput) {
+                startGamesInput.addEventListener('input', updateCalculatedGames);
+                startGamesInput.addEventListener('change', updateCalculatedGames);
+            }
+            if (currentGamesInput) {
+                currentGamesInput.addEventListener('input', updateCalculatedGames);
+                currentGamesInput.addEventListener('change', updateCalculatedGames);
+            }
+
+            if (addScreenBtn) {
+                addScreenBtn.addEventListener('click', () => {
+                    const bonusType = document.getElementById('input-bonus-type').value;
+                    const screenType = document.getElementById('input-screen-type').value;
+                    
+                    if (bonusType === "炎炎ボーナス") {
+                        const enrenInput = document.getElementById('input-enren-bonus');
+                        enrenInput.value = (parseInt(enrenInput.value) || 0) + 1;
+                    } else {
+                        const accelInput = document.getElementById('input-accel-reg-bonus');
+                        accelInput.value = (parseInt(accelInput.value) || 0) + 1;
+                    }
+                    updateBonusTotal();
+
+                    bonusScreenHistory.push({
+                        bonusType: bonusType,
+                        screenType: screenType,
+                        timestamp: Date.now()
+                    });
+
+                    renderScreenHistory();
+                    autoSaveMemo();
+                    updateCompleteness();
+                    calculateStats();
+                    updateResultDistributions();
+                });
+            }
+
+            if (clearScreenBtn) {
+                clearScreenBtn.addEventListener('click', () => {
+                    if (confirm('終了画面の履歴をすべて削除しますか？')) {
+                        bonusScreenHistory = [];
+                        renderScreenHistory();
+                        autoSaveMemo();
+                        updateCompleteness();
+                        calculateStats();
+                        updateResultDistributions();
+                    }
+                });
+            }
+
+            if (addRegBtn) {
+                addRegBtn.addEventListener('click', () => {
+                    const scenarioSelect = document.getElementById('input-reg-scenario');
+                    const scenario = scenarioSelect.value;
+                    
+                    if (!scenario) {
+                        alert('有効なシナリオを選択してください。');
+                        return;
+                    }
+
+                    regHistory.push({
+                        scenario: scenario,
+                        timestamp: Date.now()
+                    });
+
+                    renderRegHistory();
+                    autoSaveMemo();
+                    updateCompleteness();
+                    updateInferenceDistribution();
+                    updateResultDistributions();
+
+                    document.getElementById('reg-filter-1').value = "";
+                    onRegFilterChange(1);
+                });
+            }
+
+            if (clearRegBtn) {
+                clearRegBtn.addEventListener('click', () => {
+                    if (confirm('REG中キャラ紹介の履歴をすべて削除しますか？')) {
+                        regHistory = [];
+                        renderRegHistory();
+                        autoSaveMemo();
+                        updateCompleteness();
+                        updateInferenceDistribution();
+                        updateResultDistributions();
+                    }
+                });
+            }
+
+            saveBtn.addEventListener('click', () => {
+                autoSaveMemo();
+                alert('実戦メモを保存しました！');
+                calculateStats();
+                updateResultDistributions();
+            });
+
+            bonusInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    updateBonusTotal();
+                    calculateStats();
+                    autoSaveMemo();
+                    updateCompleteness();
+                });
+                input.addEventListener('change', () => {
+                    updateBonusTotal();
+                    calculateStats();
+                    autoSaveMemo();
+                    updateCompleteness();
+                });
+            });
+
+            resetBtn.addEventListener('click', () => {
+                if (confirm('すべてのデータをリセットしますか？')) {
+                    localStorage.removeItem('enjen2_memo');
+                    document.getElementById('input-start-games').value = '0';
+                    document.getElementById('input-current-games').value = '';
+                    document.getElementById('input-games').value = '0';
+                    document.getElementById('input-bonus').value = '0';
+                    document.getElementById('input-enjen').value = '0';
+                    document.getElementById('input-enren-bonus').value = '0';
+                    document.getElementById('input-accel-reg-bonus').value = '0';
+                    
+                    bonusScreenHistory = [];
+                    renderScreenHistory();
+                    regHistory = [];
+                    renderRegHistory();
+
+                    document.getElementById('reg-filter-1').value = "";
+                    onRegFilterChange(1);
+
+                    calculateStats();
+                    updateReliability(0);
+                    updateInferenceDistribution();
+                    updateCompleteness();
+                    updateResultDistributions();
+                    alert('リセットしました。');
+                }
+            });
+        }
+
+        function updateResultDistributions() {
+            const screenContainer = document.getElementById('result-screen-distribution');
+            if (screenContainer) {
+                if (bonusScreenHistory.length === 0) {
+                    screenContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
+                } else {
+                    let counts = {};
+                    APP_DATA.screenAnalysis.screenNames.forEach(name => counts[name] = 0);
+                    bonusScreenHistory.forEach(item => {
+                        if (counts[item.screenType] !== undefined) {
+                            counts[item.screenType]++;
+                        }
+                    });
+
+                    let html = '';
+                    const totalScreens = bonusScreenHistory.length;
+                    APP_DATA.screenAnalysis.screenNames.forEach(name => {
+                        const cnt = counts[name];
+                        const pct = totalScreens > 0 ? Math.round((cnt / totalScreens) * 100) : 0;
+                        html += `
+                            <div class="stat-row" style="margin-bottom: 4px;">
+                                <span>${name}:</span>
+                                <strong>${cnt}回 (${pct}%)</strong>
+                            </div>
+                        `;
+                    });
+                    screenContainer.innerHTML = html;
+                }
+            }
+
+            const regContainer = document.getElementById('result-reg-distribution');
+            if (regContainer) {
+                if (regHistory.length === 0) {
+                    regContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
+                } else {
+                    let counts = {};
+                    APP_DATA.regCharacters.forEach(item => counts[item.scenario] = 0);
+                    regHistory.forEach(item => {
+                        if (counts[item.scenario] !== undefined) {
+                            counts[item.scenario]++;
+                        }
+                    });
+
+                    let html = '';
+                    const totalRegs = regHistory.length;
+                    APP_DATA.regCharacters.forEach(item => {
+                        const cnt = counts[item.scenario];
+                        if (cnt > 0) {
+                            const pct = totalRegs > 0 ? Math.round((cnt / totalRegs) * 100) : 0;
+                            html += `
+                                <div class="stat-row" style="margin-bottom: 4px;">
+                                    <span>${item.scenario} [${item.suggestion}]:</span>
+                                    <strong>${cnt}回 (${pct}%)</strong>
+                                </div>
+                            `;
+                        }
+                    });
+                    if (html === '') {
+                        regContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
+                    } else {
+                        regContainer.innerHTML = html;
+                    }
+                }
+            }
+        }
+
+        function calculateStats() {
+            const games = parseInt(document.getElementById('input-games').value) || 0;
+            const bonus = parseInt(document.getElementById('input-bonus').value) || 0;
+            const enjen = parseInt(document.getElementById('input-enjen').value) || 0;
+
+            let bonusActual = 0;
+            let enjenActual = 0;
+
+            if (games > 0 && bonus > 0) {
+                bonusActual = (games / bonus).toFixed(1);
+            }
+            if (games > 0 && enjen > 0) {
+                enjenActual = (games / enjen).toFixed(1);
+            }
+
+            document.getElementById('calc-bonus-result').textContent = bonusActual > 0 ? `1 / ${bonusActual}` : '---';
+            document.getElementById('calc-enjen-result').textContent = enjenActual > 0 ? `1 / ${enjenActual}` : '---';
+
+            highlightClosestSpecs(parseFloat(bonusActual), parseFloat(enjenActual));
+            
+            updateReliability(games);
+            updateInferenceDistribution();
+        }
+
+        function updateCompleteness() {
+            const starsEl = document.getElementById('completeness-stars');
+            const scoreEl = document.getElementById('completeness-score');
+            const msgEl = document.getElementById('completeness-message');
+            const warningsEl = document.getElementById('completeness-warnings');
+            if (!starsEl || !scoreEl || !msgEl || !warningsEl) return;
+
+            const games = parseInt(document.getElementById('input-games').value) || 0;
+            const bonus = parseInt(document.getElementById('input-bonus').value) || 0;
+            const enjen = parseInt(document.getElementById('input-enjen').value) || 0;
+            const screenCount = bonusScreenHistory.length;
+            const regCount = regHistory.length;
+
+            let score = 0;
+            let warnings = [];
+
+            if (games >= 3000) {
+                score += 30;
+            } else {
+                score += Math.round((games / 3000) * 30);
+                warnings.push("・通常ゲーム数が少ない");
+            }
+
+            if (bonus >= 10) {
+                score += 20;
+            } else {
+                score += Math.round((bonus / 10) * 20);
+                warnings.push("・初当たりボーナス回数が少ない");
+            }
+
+            if (enjen >= 8) {
+                score += 20;
+            } else {
+                score += Math.round((enjen / 8) * 20);
+                warnings.push("・炎炎激闘初当たり回数が少ない");
+            }
+
+            if (screenCount >= 5) {
+                score += 15;
+            } else {
+                score += Math.round((screenCount / 5) * 15);
+                warnings.push("・終了画面登録が少ない");
+            }
+
+            if (regCount >= 5) {
+                score += 15;
+            } else {
+                score += Math.round((regCount / 5) * 15);
+                warnings.push("・REG中キャラ紹介の入力が少ない");
+            }
+
+            if (score > 100) score = 100;
+
+            let stars = "";
+            let msg = "";
+
+            if (score <= 20) {
+                stars = "★☆☆☆☆";
+                msg = "データ不足";
+            } else if (score <= 40) {
+                stars = "★★☆☆☆";
+                msg = "やや不足";
+            } else if (score <= 70) {
+                stars = "★★★☆☆";
+                msg = "十分";
+            } else if (score <= 90) {
+                stars = "★★★★☆";
+                msg = "充実";
+            } else {
+                stars = "★★★★★";
+                msg = "非常に充実";
+            }
+
+            starsEl.textContent = stars;
+            scoreEl.textContent = `${score}点`;
+            msgEl.textContent = msg;
+
+            if (warnings.length > 0 && score < 100) {
+                warningsEl.style.display = "block";
+                warningsEl.innerHTML = "<div style='font-size:0.75rem; color:#aaa; margin-bottom:2px;'>不足データ</div>" + warnings.join("<br>");
+            } else {
+                warningsEl.style.display = "none";
+                warningsEl.innerHTML = "";
+            }
+        }
+
+        function updateReliability(games) {
+            const starsEl = document.getElementById('reliability-stars');
+            const gamesEl = document.getElementById('reliability-games');
+            const msgEl = document.getElementById('reliability-message');
+            if (!starsEl || !gamesEl || !msgEl) return;
+
+            gamesEl.textContent = `通常ゲーム数：${games}G`;
+
+            let stars = "";
+            let msg = "";
+
+            if (games <= 999) {
+                stars = "★☆☆☆☆";
+                msg = "データ不足";
+            } else if (games <= 1999) {
+                stars = "★★☆☆☆";
+                msg = "参考程度";
+            } else if (games <= 3999) {
+                stars = "★★★☆☆";
+                msg = "ある程度信頼できます";
+            } else if (games <= 5999) {
+                stars = "★★★★☆";
+                msg = "高い信頼度です";
+            } else {
+                stars = "★★★★★";
+                msg = "非常に高い信頼度です";
+            }
+
+            starsEl.textContent = stars;
+            msgEl.textContent = msg;
+        }
+
+        function updateInferenceDistribution() {
+            const container = document.getElementById('inference-distribution-container');
+            if (!container) return;
+
+            const games = parseInt(document.getElementById('input-games').value) || 0;
+            const bonus = parseInt(document.getElementById('input-bonus').value) || 0;
+            const enjen = parseInt(document.getElementById('input-enjen').value) || 0;
+
+            const specs = APP_DATA.specs;
+            let likelihoods = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]; 
+
+            let is6Confirmed = false;
+            let is56Confirmed = false;
+            let is456Confirmed = false;
+
+            bonusScreenHistory.forEach(item => {
+                if (item.screenType === "金帯") is6Confirmed = true;
+                if (item.screenType === "赤帯") is56Confirmed = true;
+                if (item.screenType === "黒帯") is456Confirmed = true;
+            });
+
+            regHistory.forEach(item => {
+                if (item.scenario === "第8④") is6Confirmed = true;
+                if (item.scenario === "伝導者④") is56Confirmed = true;
+                if (item.scenario === "第8③" || item.scenario === "大隊長") is456Confirmed = true;
+                if (item.scenario === "アイリス(全赤)") is6Confirmed = true;
+            });
+
+            if (is6Confirmed) {
+                likelihoods = [0, 0, 0, 0, 0, 1];
+            } else if (is56Confirmed) {
+                likelihoods = [0, 0, 0, 0, 1, 1];
+            } else if (is456Confirmed) {
+                likelihoods = [0, 0, 0, 1, 1, 1];
+            } else {
+                if (games > 100 && (bonus > 0 || enjen > 0)) {
+                    const userBonusProb = games / (bonus || 1);
+                    const userEnjenProb = games / (enjen || 1);
+
+                    for (let i = 0; i < 6; i++) {
+                        const bonusDiffRatio = Math.abs(specs.bonusProb[i] - userBonusProb) / specs.bonusProb[i];
+                        const enjenDiffRatio = Math.abs(specs.enjenProb[i] - userEnjenProb) / specs.enjenProb[i];
+                        
+                        likelihoods[i] *= Math.max(0.01, Math.exp(-bonusDiffRatio * 3) * Math.exp(-enjenDiffRatio * 2));
+                    }
+                }
+
+                if (bonusScreenHistory.length > 0) {
+                    bonusScreenHistory.forEach(item => {
+                        const screenIdx = APP_DATA.screenAnalysis.screenNames.indexOf(item.screenType);
+                        if (screenIdx !== -1) {
+                            const rawRates = (item.bonusType === "炎炎ボーナス") 
+                                ? APP_DATA.screenAnalysis.enrenRawRates[screenIdx] 
+                                : APP_DATA.screenAnalysis.accelRawRates[screenIdx];
+
+                            for (let i = 0; i < 6; i++) {
+                                likelihoods[i] *= Math.max(0.0001, rawRates[i]);
+                            }
+                        }
+                    });
+                }
+
+                if (regHistory.length > 0) {
+                    regHistory.forEach(item => {
+                        const charObj = APP_DATA.regCharacters.find(c => c.scenario === item.scenario);
+                        if (charObj && charObj.rawRates) {
+                            for (let i = 0; i < 6; i++) {
+                                likelihoods[i] *= Math.max(0.0001, charObj.rawRates[i]);
+                            }
+                        }
+                    });
+                }
+            }
+
+            const totalLikelihood = likelihoods.reduce((a, b) => a + b, 0);
+            let percentages = likelihoods.map(l => totalLikelihood > 0 ? Math.round((l / totalLikelihood) * 100) : 16);
+
+            let currentSum = percentages.reduce((a, b) => a + b, 0);
+            if (currentSum !== 100 && currentSum > 0) {
+                let maxIdx = percentages.indexOf(Math.max(...percentages));
+                percentages[maxIdx] += (100 - currentSum);
+            }
+
+            let html = '';
+            for (let i = 0; i < 6; i++) {
+                const pct = percentages[i];
+                html += `
+                    <div class="inference-bar-row">
+                        <div class="inference-label">設定${specs.setting[i]}</div>
+                        <div class="inference-bar-bg">
+                            <div class="inference-bar-fill" style="width: ${pct}%;"></div>
+                        </div>
+                        <div class="inference-pct">${pct}%</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderAnalysisData() {
+            const container = document.getElementById('analysis-container');
+            const specs = APP_DATA.specs;
+            const regChars = APP_DATA.regCharacters;
+            const screenData = APP_DATA.screenAnalysis;
+
+            let html = `
+                <div class="result-card">
+                    <table class="spec-table" id="spec-comparison-table">
+                        <thead>
+                            <tr>
+                                <th>設定</th>
+                                <th>ボーナス初当り</th>
+                                <th>炎炎激闘初当り</th>
+                                <th>機械割</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            for (let i = 0; i < specs.setting.length; i++) {
+                html += `
+                    <tr>
+                        <td>設定${specs.setting[i]}</td>
+                        <td data-type="bonus" data-val="${specs.bonusProb[i]}">1/${specs.bonusProb[i]}</td>
+                        <td data-type="enjen" data-val="${specs.enjenProb[i]}">1/${specs.enjenProb[i]}</td>
+                        <td>${specs.payout[i]}%</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-card">
+                    <h3>炎炎ボーナス時 終了画面出現率</h3>
+                    <table class="spec-table" style="font-size: 0.75rem;">
+                        <thead>
+                            <tr>
+                                <th>終了画面</th>
+                                <th>1</th>
+                                <th>2</th>
+                                <th>3</th>
+                                <th>4</th>
+                                <th>5</th>
+                                <th>6</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            screenData.screenNames.forEach((name, idx) => {
+                const r = screenData.enrenRates[idx];
+                html += `
+                    <tr>
+                        <td style="text-align: left; padding-left: 4px;"><strong>${name}</strong></td>
+                        <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-card">
+                    <h3>アクセル・REG・灰焔ボーナス時 終了画面出現率</h3>
+                    <table class="spec-table" style="font-size: 0.75rem;">
+                        <thead>
+                            <tr>
+                                <th>終了画面</th>
+                                <th>1</th>
+                                <th>2</th>
+                                <th>3</th>
+                                <th>4</th>
+                                <th>5</th>
+                                <th>6</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            screenData.screenNames.forEach((name, idx) => {
+                const r = screenData.accelRates[idx];
+                html += `
+                    <tr>
+                        <td style="text-align: left; padding-left: 4px;"><strong>${name}</strong></td>
+                        <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-card">
+                    <h3>REG中キャラ紹介 ＆ シナリオ選択率</h3>
+                    <table class="spec-table" style="font-size: 0.75rem;">
+                        <thead>
+                            <tr>
+                                <th>シナリオ</th>
+                                <th>示唆</th>
+                                <th>1</th>
+                                <th>2</th>
+                                <th>3</th>
+                                <th>4</th>
+                                <th>5</th>
+                                <th>6</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            regChars.forEach(item => {
+                html += `
+                    <tr>
+                        <td><strong>${item.scenario}</strong></td>
+                        <td style="color: #ff8c00; font-weight: bold;">${item.suggestion}</td>
+                        <td>${item.rates[0]}</td>
+                        <td>${item.rates[1]}</td>
+                        <td>${item.rates[2]}</td>
+                        <td>${item.rates[3]}</td>
+                        <td>${item.rates[4]}</td>
+                        <td>${item.rates[5]}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function highlightClosestSpecs(userBonusDenom, userEnjenDenom) {
+            const rows = document.querySelectorAll('#spec-comparison-table tbody tr');
+            if (rows.length === 0) return;
+
+            document.querySelectorAll('.highlight-spec').forEach(el => el.classList.remove('highlight-spec'));
+
+            let closestBonusRow = null;
+            let minBonusDiff = Infinity;
+            let closestEnjenRow = null;
+            let minEnjenDiff = Infinity;
+
+            rows.forEach(row => {
+                const bonusTd = row.querySelector('[data-type="bonus"]');
+                const enjenTd = row.querySelector('[data-type="enjen"]');
+                const specBonus = parseFloat(bonusTd.getAttribute('data-val'));
+                const specEnjen = parseFloat(enjenTd.getAttribute('data-val'));
+
+                if (!isNaN(userBonusDenom)) {
+                    const diffBonus = Math.abs(specBonus - userBonusDenom);
+                    if (diffBonus < minBonusDiff) {
+                        minBonusDiff = diffBonus;
+                        closestBonusRow = bonusTd;
+                    }
+                }
+                if (!isNaN(userEnjenDenom)) {
+                    const diffEnjen = Math.abs(specEnjen - userEnjenDenom);
+                    if (diffEnjen < minEnjenDiff) {
+                        minEnjenDiff = diffEnjen;
+                        closestEnjenRow = enjenTd;
+                    }
+                }
+            });
+
+            if (closestBonusRow) closestBonusRow.classList.add('highlight-spec');
+            if (closestEnjenRow) closestEnjenRow.classList.add('highlight-spec');
+        }
+    </script>
+</body>
+</html>
