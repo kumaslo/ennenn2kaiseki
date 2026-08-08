@@ -383,7 +383,7 @@
         <header class="app-header">
             <h1>炎炎ノ消防隊2</h1>
             <div class="header-info">
-                <span class="version-badge">Ver.1.2.0</span>
+                <span class="version-badge">Ver.1.2.2</span>
                 <span id="access-counter" class="counter-badge">👁️ --- views</span>
             </div>
         </header>
@@ -446,6 +446,34 @@
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-accel-reg-bonus', -1)">-</button>
                         <input type="number" id="input-accel-reg-bonus" class="counter-value" value="0" min="0">
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-accel-reg-bonus', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- 伝導者の罠 小Vリプ関連カウンター -->
+                <div class="form-group" id="group-trap-lip">
+                    <label>伝導者の罠中：小Vリプ成立回数</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-lip', -1)">-</button>
+                        <input type="number" id="input-trap-lip" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-lip', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="group-trap-cross">
+                    <label>伝導者の罠中：十字目変換 発生回数</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-cross', -1)">-</button>
+                        <input type="number" id="input-trap-cross" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-cross', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="group-trap-epibo">
+                    <label>伝導者の罠中：十字目変換経由 エピボ当選回数</label>
+                    <div class="counter-control">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-epibo', -1)">-</button>
+                        <input type="number" id="input-trap-epibo" class="counter-value" value="0" min="0">
+                        <button type="button" class="counter-btn" onclick="adjustCounter('input-trap-epibo', 1)">+</button>
                     </div>
                 </div>
 
@@ -547,6 +575,22 @@
                 </div>
 
                 <div class="calc-card">
+                    <h3>伝導者の罠中 小Vリプ関連の実戦集計</h3>
+                    <div class="stat-row">
+                        <span>小Vリプ成立回数:</span>
+                        <strong id="calc-trap-lip">0回</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>十字目変換発生回数 / 期待度:</span>
+                        <strong id="calc-trap-cross-rate">0回 (---)</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>十字目変換経由エピボ当選 / 突入率:</span>
+                        <strong id="calc-trap-epibo-rate">0回 (---)</strong>
+                    </div>
+                </div>
+
+                <div class="calc-card">
                     <h3>炎炎ボーナス終了画面 実戦の分布</h3>
                     <div id="result-screen-enren-distribution" style="font-size: 0.85rem;">
                         <p style="color: #777; text-align: center; padding: 8px;">データがありません</p>
@@ -630,7 +674,7 @@
 
     <script>
         /* ==========================================
-           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.2.0)
+           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.2.2)
            ========================================== */
         const APP_DATA = {
             machineName: "L 炎炎ノ消防隊2",
@@ -639,6 +683,12 @@
                 bonusProb: [272.0, 269.0, 257.0, 242.0, 236.0, 227.0],
                 enjenProb: [684.0, 662.0, 617.0, 546.0, 518.0, 486.0],
                 payout: [97.7, 98.8, 101.2, 105.6, 110.2, 114.9]
+            },
+            trapAnalysis: {
+                crossRate: [0.42, 0.42, 0.42, 0.50, 0.50, 0.50],
+                crossRatesText: ["42%", "42%", "42%", "50%", "50%", "50%"],
+                epiboRate: [0.30, 0.30, 0.30, 0.40, 0.40, 0.40],
+                epiboRatesText: ["30%", "30%", "30%", "40%", "40%", "40%"]
             },
             regCharacters: [
                 { scenario: "第8①", chars: "シンラ / アーサー / タマキ / マキ / ヒナワ", charList: ["シンラ", "アーサー", "タマキ", "マキ", "ヒナワ"], suggestion: "デフォルト", rawRates: [0.43, 0.405, 0.38, 0.385, 0.355, 0.305], rates: ["約43.0%", "約40.5%", "約38.0%", "約38.5%", "約35.5%", "約30.5%"] },
@@ -927,6 +977,10 @@
                     document.getElementById('input-enren-bonus').value = data.enrenBonus !== undefined ? data.enrenBonus : 0;
                     document.getElementById('input-accel-reg-bonus').value = data.accelRegBonus !== undefined ? data.accelRegBonus : 0;
                     
+                    if (data.trapLip !== undefined) document.getElementById('input-trap-lip').value = data.trapLip;
+                    if (data.trapCross !== undefined) document.getElementById('input-trap-cross').value = data.trapCross;
+                    if (data.trapEpibo !== undefined) document.getElementById('input-trap-epibo').value = data.trapEpibo;
+
                     updateBonusTotal();
                     updateCalculatedGames();
 
@@ -957,6 +1011,9 @@
                 enjen: document.getElementById('input-enjen').value,
                 enrenBonus: document.getElementById('input-enren-bonus').value,
                 accelRegBonus: document.getElementById('input-accel-reg-bonus').value,
+                trapLip: document.getElementById('input-trap-lip').value,
+                trapCross: document.getElementById('input-trap-cross').value,
+                trapEpibo: document.getElementById('input-trap-epibo').value,
                 bonusScreenHistory: bonusScreenHistory,
                 regHistory: regHistory,
                 updatedAt: new Date().toLocaleString()
@@ -1043,7 +1100,7 @@
             
             const startGamesInput = document.getElementById('input-start-games');
             const currentGamesInput = document.getElementById('input-current-games');
-            const bonusInputs = document.querySelectorAll('#input-bonus, #input-enjen, #input-enren-bonus, #input-accel-reg-bonus');
+            const bonusInputs = document.querySelectorAll('#input-bonus, #input-enjen, #input-enren-bonus, #input-accel-reg-bonus, #input-trap-lip, #input-trap-cross, #input-trap-epibo');
 
             if (startGamesInput) {
                 startGamesInput.addEventListener('input', updateCalculatedGames);
@@ -1179,6 +1236,9 @@
                     document.getElementById('input-enjen').value = '0';
                     document.getElementById('input-enren-bonus').value = '0';
                     document.getElementById('input-accel-reg-bonus').value = '0';
+                    document.getElementById('input-trap-lip').value = '0';
+                    document.getElementById('input-trap-cross').value = '0';
+                    document.getElementById('input-trap-epibo').value = '0';
                     
                     bonusScreenHistory = [];
                     renderScreenHistory();
@@ -1199,6 +1259,19 @@
         }
 
         function updateResultDistributions() {
+            // 伝導者の罠 集計更新
+            const trapLip = parseInt(document.getElementById('input-trap-lip').value) || 0;
+            const trapCross = parseInt(document.getElementById('input-trap-cross').value) || 0;
+            const trapEpibo = parseInt(document.getElementById('input-trap-epibo').value) || 0;
+
+            document.getElementById('calc-trap-lip').textContent = trapLip + '回';
+            
+            const crossPct = trapLip > 0 ? ((trapCross / trapLip) * 100).toFixed(1) : '---';
+            document.getElementById('calc-trap-cross-rate').textContent = `${trapCross}回 (${crossPct}%)`;
+
+            const epiboPct = trapCross > 0 ? ((trapEpibo / trapCross) * 100).toFixed(1) : '---';
+            document.getElementById('calc-trap-epibo-rate').textContent = `${trapEpibo}回 (${epiboPct}%)`;
+
             const enrenContainer = document.getElementById('result-screen-enren-distribution');
             const otherContainer = document.getElementById('result-screen-other-distribution');
 
@@ -1319,6 +1392,7 @@
             
             updateReliability(games);
             updateInferenceDistribution();
+            updateResultDistributions();
         }
 
         function updateCompleteness() {
@@ -1446,6 +1520,9 @@
             const games = parseInt(document.getElementById('input-games').value) || 0;
             const bonus = parseInt(document.getElementById('input-bonus').value) || 0;
             const enjen = parseInt(document.getElementById('input-enjen').value) || 0;
+            const trapLip = parseInt(document.getElementById('input-trap-lip').value) || 0;
+            const trapCross = parseInt(document.getElementById('input-trap-cross').value) || 0;
+            const trapEpibo = parseInt(document.getElementById('input-trap-epibo').value) || 0;
 
             const specs = APP_DATA.specs;
             let likelihoods = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]; 
@@ -1483,6 +1560,18 @@
                         const enjenDiffRatio = Math.abs(specs.enjenProb[i] - userEnjenProb) / specs.enjenProb[i];
                         
                         likelihoods[i] *= Math.max(0.01, Math.exp(-bonusDiffRatio * 3) * Math.exp(-enjenDiffRatio * 2));
+                    }
+                }
+
+                if (trapLip >= 3) {
+                    const userCrossRate = trapCross / trapLip;
+                    const userEpiboRate = trapCross > 0 ? trapEpibo / trapCross : 0;
+                    for (let i = 0; i < 6; i++) {
+                        const targetCross = APP_DATA.trapAnalysis.crossRate[i];
+                        const targetEpibo = APP_DATA.trapAnalysis.epiboRate[i];
+                        const crossDiff = Math.abs(targetCross - userCrossRate);
+                        const epiboDiff = Math.abs(targetEpibo - userEpiboRate);
+                        likelihoods[i] *= Math.max(0.05, Math.exp(-crossDiff * 2) * Math.exp(-epiboDiff * 2));
                     }
                 }
 
@@ -1550,6 +1639,10 @@
             const enjen = document.getElementById('input-enjen').value || '0';
             const bonusProb = document.getElementById('calc-bonus-result').textContent;
             const enjenProb = document.getElementById('calc-enjen-result').textContent;
+            
+            const trapLip = document.getElementById('input-trap-lip').value || '0';
+            const trapCrossRate = document.getElementById('calc-trap-cross-rate').textContent;
+            const trapEpiboRate = document.getElementById('calc-trap-epibo-rate').textContent;
 
             const p = currentInferencePercentages;
             const maxP = Math.max(...p);
@@ -1566,6 +1659,11 @@
             text += `通常ゲーム数：${games}G\n`;
             text += `初当たりボーナス：${bonus}回 (${bonusProb})\n`;
             text += `炎炎激闘初当たり：${enjen}回 (${enjenProb})\n\n`;
+
+            text += `【伝導者の罠 集計】\n`;
+            text += `小Vリプ回数：${trapLip}回\n`;
+            text += `十字目変換発生：${trapCrossRate}\n`;
+            text += `エピボ突入率：${trapEpiboRate}\n\n`;
 
             text += `【設定推測分布】\n`;
             for (let i = 0; i < 6; i++) {
@@ -1593,6 +1691,7 @@
             const specs = APP_DATA.specs;
             const regChars = APP_DATA.regCharacters;
             const screenData = APP_DATA.screenAnalysis;
+            const trapData = APP_DATA.trapAnalysis;
 
             let html = `
                 <div class="result-card">
@@ -1621,6 +1720,31 @@
             }
 
             html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-card">
+                    <h3>伝導者の罠中 リプ小V成立時のエピソードボーナス抽選</h3>
+                    <table class="spec-table analysis-table" style="font-size: 0.75rem;" data-table-id="trap-analysis">
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>低設定</th>
+                                <th>高設定</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="text-align: left; padding-left: 4px;"><strong>十字目変換 発生期待度</strong></td>
+                                <td data-col="low" data-val="0.42">${trapData.crossRatesText[0]}</td>
+                                <td data-col="high" data-val="0.50">${trapData.crossRatesText[3]}</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: left; padding-left: 4px;"><strong>十字目変換 発生時のエピボ期待度</strong></td>
+                                <td data-col="low" data-val="0.30">${trapData.epiboRatesText[0]}</td>
+                                <td data-col="high" data-val="0.40">${trapData.epiboRatesText[3]}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1794,7 +1918,6 @@
                         const val = parseFloat(td.getAttribute('data-val'));
                         if (!isNaN(val) && val > maxVal && val > 0.001) {
                             maxVal = val;
-                            targetId = td;
                             targetTd = td;
                         }
                     });
