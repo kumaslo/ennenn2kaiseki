@@ -47,6 +47,15 @@
             }
         }
 
+        /* 入力フラッシュアニメーション */
+        @keyframes input-flash {
+            0% { background-color: rgba(255, 69, 0, 0.4); }
+            100% { background-color: transparent; }
+        }
+        .flash-active {
+            animation: input-flash 0.25s ease-out;
+        }
+
         /* スマホを横画面（ランドスケープ）にしたときの最適化 */
         @media (orientation: landscape) {
             .app-container {
@@ -58,7 +67,6 @@
             .app-main {
                 padding: 10px 16px !important;
             }
-            /* 横画面時の実戦メモ内部レイアウト (active時のみflexを適用してバグを防止) */
             #tab-memo.active {
                 display: flex;
                 flex-wrap: wrap;
@@ -98,11 +106,25 @@
             font-weight: bold;
             letter-spacing: 1px;
         }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .version-badge {
             background: rgba(0, 0, 0, 0.3);
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.7rem;
+        }
+        .counter-badge {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #ffaa00;
+            font-weight: bold;
+            border: 1px solid rgba(255, 170, 0, 0.3);
         }
 
         /* メインスクロールエリア */
@@ -315,7 +337,7 @@
         }
         .spec-table th {
             background: #222;
-            color: #ff8c00;
+            color: #ffaa00;
         }
         .highlight-spec {
             background-color: rgba(255, 69, 0, 0.3) !important;
@@ -360,19 +382,22 @@
     <div id="app" class="app-container">
         <header class="app-header">
             <h1>炎炎ノ消防隊2</h1>
-            <span class="version-badge">Ver.1.0.0</span>
+            <div class="header-info">
+                <span class="version-badge">Ver.1.1.4</span>
+                <span id="access-counter" class="counter-badge">👁️ --- views</span>
+            </div>
         </header>
 
         <main class="app-main">
             <section id="tab-memo" class="tab-content active">
                 <h2>実戦メモ ＆ 入力</h2>
                 
-                <div class="form-group">
+                <div class="form-group" id="group-start-games">
                     <label for="input-start-games">打ち始めゲーム数（手入力）</label>
                     <input type="number" id="input-start-games" value="0" placeholder="例: 0">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-current-games">
                     <label for="input-current-games">現在のゲーム数</label>
                     <input type="number" id="input-current-games" placeholder="例: 3000">
                     <div class="quick-btn-container">
@@ -383,12 +408,12 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-games">
                     <label for="input-games">自分で打ったゲーム数（自動計算）</label>
                     <input type="number" id="input-games" value="0" readonly>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="group-bonus">
                     <label>ボーナス初当り回数（自動合算）</label>
                     <div class="counter-control">
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-bonus', -1)">-</button>
@@ -397,7 +422,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-enjen">
                     <label>炎炎激闘初当り回数</label>
                     <div class="counter-control">
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-enjen', -1)">-</button>
@@ -406,7 +431,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-enren-bonus">
                     <label>炎炎ボーナス回数</label>
                     <div class="counter-control">
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-enren-bonus', -1)">-</button>
@@ -415,7 +440,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-accel-reg-bonus">
                     <label>アクセル・REG・灰焔ボーナス回数（合計）</label>
                     <div class="counter-control">
                         <button type="button" class="counter-btn" onclick="adjustCounter('input-accel-reg-bonus', -1)">-</button>
@@ -424,7 +449,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-screen-history">
                     <label>ボーナス終了画面 履歴登録</label>
                     <div style="margin-bottom: 8px;">
                         <label for="input-bonus-type" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">① ボーナス種類を選択</label>
@@ -438,7 +463,7 @@
                     <div style="margin-bottom: 8px;">
                         <label for="input-screen-type" style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">② 終了画面を選択</label>
                         <select id="input-screen-type">
-                            <option value="赤背景">赤背景</option>
+                            <option value="デフォルト＆その他">デフォルト＆その他</option>
                             <option value="大笑い">大笑い</option>
                             <option value="黒の女">黒の女</option>
                             <option value="黒帯">黒帯</option>
@@ -446,7 +471,7 @@
                             <option value="金帯">金帯</option>
                         </select>
                     </div>
-                    <button type="button" id="btn-add-screen-history" class="btn-primary" style="margin-top: 4px;">追加（ボーナス回数も自動加算）</button>
+                    <button type="button" id="btn-add-screen-history" class="btn-primary" style="margin-top: 4px;">追加</button>
                 </div>
 
                 <div class="calc-card">
@@ -459,7 +484,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-reg-history">
                     <label>REG中キャラ紹介 履歴登録（フィルター選択）</label>
                     
                     <div style="margin-bottom: 8px;">
@@ -522,8 +547,15 @@
                 </div>
 
                 <div class="calc-card">
-                    <h3>ボーナス終了画面 実戦の分布</h3>
-                    <div id="result-screen-distribution" style="font-size: 0.85rem;">
+                    <h3>炎炎ボーナス終了画面 実戦の分布</h3>
+                    <div id="result-screen-enren-distribution" style="font-size: 0.85rem;">
+                        <p style="color: #777; text-align: center; padding: 8px;">データがありません</p>
+                    </div>
+                </div>
+
+                <div class="calc-card">
+                    <h3>その他のボーナス終了画面 実戦の分布</h3>
+                    <div id="result-screen-other-distribution" style="font-size: 0.85rem;">
                         <p style="color: #777; text-align: center; padding: 8px;">データがありません</p>
                     </div>
                 </div>
@@ -564,7 +596,7 @@
                 <div class="result-card">
                     <h3>設定推測確率（分布）</h3>
                     <div id="inference-distribution-container" style="margin-top: 10px;">
-                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -586,7 +618,7 @@
 
     <script>
         /* ==========================================
-           アプリ用データおよびスクリプト (Ver.1.0.0)
+           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.1.4)
            ========================================== */
         const APP_DATA = {
             machineName: "L 炎炎ノ消防隊2",
@@ -607,14 +639,14 @@
                 { scenario: "伝導者④", chars: "ジョヴァンニ / カロン / ハウメア / フレイル / 金象", charList: ["ジョヴァンニ", "カロン", "ハウメア", "フレイル", "金象"], suggestion: "設定5以上", rawRates: [0.001, 0.001, 0.001, 0.001, 0.005, 0.01], rates: ["-", "-", "-", "-", "約0.5%", "約1.0%"] },
                 { scenario: "まもるくん1人目", chars: "まもるくん / オウビ / インカ / アーグ / バーンズ", charList: ["まもるくん", "オウビ", "インカ", "アーグ", "バーンズ"], suggestion: "設定1否定", rawRates: [0.001, 0.10, 0.10, 0.04, 0.04, 0.04], rates: ["-", "約10.0%", "約10.0%", "約4.0%", "約4.0%", "約4.0%"] },
                 { scenario: "まもるくん2人目", chars: "アイリス / まもるくん / インカ / アーグ / バーンズ", charList: ["アイリス", "まもるくん", "インカ", "アーグ", "バーンズ"], suggestion: "設定2否定", rawRates: [0.075, 0.001, 0.10, 0.04, 0.04, 0.04], rates: ["約7.5%", "-", "約10.0%", "約4.0%", "約4.0%", "約4.0%"] },
-                { scenario: "まもるくん3人目", chars: "アイリス / オウビ / まもるくん / アーグ / バーンズ", charList: ["アイリス", "オウビ", "まもるくん", "アーグ", "バーンズ"], suggestion: "設定3否定", rawRates: [0.075, 0.075, 0.001, 0.04, 0.04, 0.04], rates: ["約7.5%", "約7.5%", "-", "約4.0%", "約4.0%", "約4.0%"] },
+                { scenario: "まもるくん3人目", chars: "アイリス / オウビ / まもるくん / アーグ / バーンズ", charList: ["アイリス", "オウビ", "まもるくん", "アーグ", "バーンズ"], suggestion: "設定3否定", rawRates: [0.075, 0.075, 0.001, 0.04, 0.04, 0.04], rates: ["-", "約7.5%", "約7.5%", "約4.0%", "約4.0%", "約4.0%"] },
                 { scenario: "まもるくん4人目", chars: "アイリス / オウビ / インカ / まもるくん / バーンズ", charList: ["アイリス", "オウビ", "インカ", "まもるくん", "バーンズ"], suggestion: "設定4否定", rawRates: [0.03, 0.03, 0.03, 0.001, 0.075, 0.04], rates: ["約3.0%", "約3.0%", "約3.0%", "-", "約7.5%", "約4.0%"] },
                 { scenario: "まもるくん5人目", chars: "アイリス / オウビ / インカ / アーグ / まもるくん", charList: ["アイリス", "オウビ", "インカ", "アーグ", "まもるくん"], suggestion: "設定5否定", rawRates: [0.03, 0.03, 0.03, 0.05, 0.001, 0.075], rates: ["約3.0%", "約3.0%", "約3.0%", "約5.0%", "-", "約7.5%"] },
                 { scenario: "アイリス(全赤)", chars: "アイリス / オウビ / インカ / アーグ / バーンズ", charList: ["アイリス", "オウビ", "インカ", "アーグ", "バーンズ"], suggestion: "設定6", rawRates: [0.001, 0.001, 0.001, 0.001, 0.001, 0.005], rates: ["-", "-", "-", "-", "-", "約0.5%"] },
                 { scenario: "大隊長", chars: "ジョヴァンニ / オウビ / アーグ / バーンズ / 紅丸", charList: ["ジョヴァンニ", "オウビ", "アーグ", "バーンズ", "紅丸"], suggestion: "設定4以上", rawRates: [0.001, 0.001, 0.001, 0.01, 0.01, 0.005], rates: ["-", "-", "-", "約1.0%", "約1.0%", "約0.5%"] }
             ],
             screenAnalysis: {
-                screenNames: ["赤背景", "大笑い", "黒の女", "黒帯", "赤帯", "金帯"],
+                screenNames: ["デフォルト＆その他", "大笑い", "黒の女", "黒帯", "赤帯", "金帯"],
                 enrenRawRates: [
                     [0.86, 0.84, 0.83, 0.76, 0.73, 0.70],
                     [0.11, 0.12, 0.13, 0.14, 0.16, 0.17],
@@ -662,7 +694,31 @@
             updateCalculatedGames();
             updateCompleteness();
             updateResultDistributions();
+            fetchAccessCounter();
         });
+
+        function triggerFlash(elementId) {
+            const el = document.getElementById(elementId) || document.querySelector('.app-container');
+            if (!el) return;
+            el.classList.remove('flash-active');
+            void el.offsetWidth;
+            el.classList.add('flash-active');
+        }
+
+        // アクセス数カウンター取得API
+        function fetchAccessCounter() {
+            const counterEl = document.getElementById('access-counter');
+            if (!counterEl) return;
+            
+            fetch('https://api.countapi.xyz/hit/github-fireforce2-tool/visits')
+                .then(response => response.json())
+                .then(data => {
+                    counterEl.textContent = `👁️ ${data.value.toLocaleString()} views`;
+                })
+                .catch(error => {
+                    counterEl.textContent = `👁️ Viewer`;
+                });
+        }
 
         function initRegFilters() {
             const select1 = document.getElementById('reg-filter-1');
@@ -786,6 +842,8 @@
             currentVal += amount;
             if (currentVal < 0) currentVal = 0;
             input.value = currentVal;
+            
+            triggerFlash('group-' + elementId.replace('input-', ''));
             calculateStats();
             autoSaveMemo();
         }
@@ -797,6 +855,7 @@
             currentVal += amount;
             if (currentVal < 0) currentVal = 0;
             input.value = currentVal;
+            triggerFlash('group-current-games');
             updateCalculatedGames();
         }
 
@@ -915,20 +974,6 @@
         }
 
         function removeScreenHistory(index) {
-            const removed = bonusScreenHistory[index];
-            if (removed) {
-                if (removed.bonusType === "炎炎ボーナス") {
-                    const enrenInput = document.getElementById('input-enren-bonus');
-                    let val = parseInt(enrenInput.value) || 0;
-                    if (val > 0) enrenInput.value = val - 1;
-                } else {
-                    const accelInput = document.getElementById('input-accel-reg-bonus');
-                    let val = parseInt(accelInput.value) || 0;
-                    if (val > 0) accelInput.value = val - 1;
-                }
-                updateBonusTotal();
-            }
-
             bonusScreenHistory.splice(index, 1);
             renderScreenHistory();
             autoSaveMemo();
@@ -995,15 +1040,6 @@
                 addScreenBtn.addEventListener('click', () => {
                     const bonusType = document.getElementById('input-bonus-type').value;
                     const screenType = document.getElementById('input-screen-type').value;
-                    
-                    if (bonusType === "炎炎ボーナス") {
-                        const enrenInput = document.getElementById('input-enren-bonus');
-                        enrenInput.value = (parseInt(enrenInput.value) || 0) + 1;
-                    } else {
-                        const accelInput = document.getElementById('input-accel-reg-bonus');
-                        accelInput.value = (parseInt(accelInput.value) || 0) + 1;
-                    }
-                    updateBonusTotal();
 
                     bonusScreenHistory.push({
                         bonusType: bonusType,
@@ -1012,6 +1048,7 @@
                     });
 
                     renderScreenHistory();
+                    triggerFlash('group-screen-history');
                     autoSaveMemo();
                     updateCompleteness();
                     calculateStats();
@@ -1024,6 +1061,7 @@
                     if (confirm('終了画面の履歴をすべて削除しますか？')) {
                         bonusScreenHistory = [];
                         renderScreenHistory();
+                        triggerFlash('group-screen-history');
                         autoSaveMemo();
                         updateCompleteness();
                         calculateStats();
@@ -1048,6 +1086,7 @@
                     });
 
                     renderRegHistory();
+                    triggerFlash('group-reg-history');
                     autoSaveMemo();
                     updateCompleteness();
                     updateInferenceDistribution();
@@ -1063,6 +1102,7 @@
                     if (confirm('REG中キャラ紹介の履歴をすべて削除しますか？')) {
                         regHistory = [];
                         renderRegHistory();
+                        triggerFlash('group-reg-history');
                         autoSaveMemo();
                         updateCompleteness();
                         updateInferenceDistribution();
@@ -1073,6 +1113,7 @@
 
             saveBtn.addEventListener('click', () => {
                 autoSaveMemo();
+                triggerFlash('app');
                 alert('実戦メモを保存しました！');
                 calculateStats();
                 updateResultDistributions();
@@ -1123,24 +1164,29 @@
         }
 
         function updateResultDistributions() {
-            const screenContainer = document.getElementById('result-screen-distribution');
-            if (screenContainer) {
-                if (bonusScreenHistory.length === 0) {
-                    screenContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
+            const enrenContainer = document.getElementById('result-screen-enren-distribution');
+            const otherContainer = document.getElementById('result-screen-other-distribution');
+
+            let enrenItems = bonusScreenHistory.filter(item => item.bonusType === "炎炎ボーナス");
+            let otherItems = bonusScreenHistory.filter(item => item.bonusType !== "炎炎ボーナス");
+
+            if (enrenContainer) {
+                if (enrenItems.length === 0) {
+                    enrenContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
                 } else {
                     let counts = {};
                     APP_DATA.screenAnalysis.screenNames.forEach(name => counts[name] = 0);
-                    bonusScreenHistory.forEach(item => {
+                    enrenItems.forEach(item => {
                         if (counts[item.screenType] !== undefined) {
                             counts[item.screenType]++;
                         }
                     });
 
                     let html = '';
-                    const totalScreens = bonusScreenHistory.length;
+                    const total = enrenItems.length;
                     APP_DATA.screenAnalysis.screenNames.forEach(name => {
                         const cnt = counts[name];
-                        const pct = totalScreens > 0 ? Math.round((cnt / totalScreens) * 100) : 0;
+                        const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
                         html += `
                             <div class="stat-row" style="margin-bottom: 4px;">
                                 <span>${name}:</span>
@@ -1148,7 +1194,35 @@
                             </div>
                         `;
                     });
-                    screenContainer.innerHTML = html;
+                    enrenContainer.innerHTML = html;
+                }
+            }
+
+            if (otherContainer) {
+                if (otherItems.length === 0) {
+                    otherContainer.innerHTML = '<p style="color: #777; text-align: center; padding: 8px;">データがありません</p>';
+                } else {
+                    let counts = {};
+                    APP_DATA.screenAnalysis.screenNames.forEach(name => counts[name] = 0);
+                    otherItems.forEach(item => {
+                        if (counts[item.screenType] !== undefined) {
+                            counts[item.screenType]++;
+                        }
+                    });
+
+                    let html = '';
+                    const total = otherItems.length;
+                    APP_DATA.screenAnalysis.screenNames.forEach(name => {
+                        const cnt = counts[name];
+                        const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
+                        html += `
+                            <div class="stat-row" style="margin-bottom: 4px;">
+                                <span>${name}:</span>
+                                <strong>${cnt}回 (${pct}%)</strong>
+                            </div>
+                        `;
+                    });
+                    otherContainer.innerHTML = html;
                 }
             }
 
@@ -1437,6 +1511,7 @@
 
             let html = `
                 <div class="result-card">
+                    <h3>CZ・初当り確率 ＆ 機械割</h3>
                     <table class="spec-table" id="spec-comparison-table">
                         <thead>
                             <tr>
@@ -1467,7 +1542,7 @@
 
                 <div class="result-card">
                     <h3>炎炎ボーナス時 終了画面出現率</h3>
-                    <table class="spec-table" style="font-size: 0.75rem;">
+                    <table class="spec-table analysis-table" style="font-size: 0.75rem;" data-table-id="enren-screen">
                         <thead>
                             <tr>
                                 <th>終了画面</th>
@@ -1483,10 +1558,16 @@
             `;
             screenData.screenNames.forEach((name, idx) => {
                 const r = screenData.enrenRates[idx];
+                const rawR = screenData.enrenRawRates[idx];
                 html += `
                     <tr>
                         <td style="text-align: left; padding-left: 4px;"><strong>${name}</strong></td>
-                        <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>
+                        <td data-col="1" data-val="${rawR[0]}">${r[0]}</td>
+                        <td data-col="2" data-val="${rawR[1]}">${r[1]}</td>
+                        <td data-col="3" data-val="${rawR[2]}">${r[2]}</td>
+                        <td data-col="4" data-val="${rawR[3]}">${r[3]}</td>
+                        <td data-col="5" data-val="${rawR[4]}">${r[4]}</td>
+                        <td data-col="6" data-val="${rawR[5]}">${r[5]}</td>
                     </tr>
                 `;
             });
@@ -1497,7 +1578,7 @@
 
                 <div class="result-card">
                     <h3>アクセル・REG・灰焔ボーナス時 終了画面出現率</h3>
-                    <table class="spec-table" style="font-size: 0.75rem;">
+                    <table class="spec-table analysis-table" style="font-size: 0.75rem;" data-table-id="accel-screen">
                         <thead>
                             <tr>
                                 <th>終了画面</th>
@@ -1513,10 +1594,16 @@
             `;
             screenData.screenNames.forEach((name, idx) => {
                 const r = screenData.accelRates[idx];
+                const rawR = screenData.accelRawRates[idx];
                 html += `
                     <tr>
                         <td style="text-align: left; padding-left: 4px;"><strong>${name}</strong></td>
-                        <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>
+                        <td data-col="1" data-val="${rawR[0]}">${r[0]}</td>
+                        <td data-col="2" data-val="${rawR[1]}">${r[1]}</td>
+                        <td data-col="3" data-val="${rawR[2]}">${r[2]}</td>
+                        <td data-col="4" data-val="${rawR[3]}">${r[3]}</td>
+                        <td data-col="5" data-val="${rawR[4]}">${r[4]}</td>
+                        <td data-col="6" data-val="${rawR[5]}">${r[5]}</td>
                     </tr>
                 `;
             });
@@ -1527,7 +1614,7 @@
 
                 <div class="result-card">
                     <h3>REG中キャラ紹介 ＆ シナリオ選択率</h3>
-                    <table class="spec-table" style="font-size: 0.75rem;">
+                    <table class="spec-table analysis-table" style="font-size: 0.75rem;" data-table-id="reg-chars">
                         <thead>
                             <tr>
                                 <th>シナリオ</th>
@@ -1548,12 +1635,12 @@
                     <tr>
                         <td><strong>${item.scenario}</strong></td>
                         <td style="color: #ff8c00; font-weight: bold;">${item.suggestion}</td>
-                        <td>${item.rates[0]}</td>
-                        <td>${item.rates[1]}</td>
-                        <td>${item.rates[2]}</td>
-                        <td>${item.rates[3]}</td>
-                        <td>${item.rates[4]}</td>
-                        <td>${item.rates[5]}</td>
+                        <td data-col="1" data-val="${item.rawRates[0]}">${item.rates[0]}</td>
+                        <td data-col="2" data-val="${item.rawRates[1]}">${item.rates[1]}</td>
+                        <td data-col="3" data-val="${item.rawRates[2]}">${item.rates[2]}</td>
+                        <td data-col="4" data-val="${item.rawRates[3]}">${item.rates[3]}</td>
+                        <td data-col="5" data-val="${item.rawRates[4]}">${item.rates[4]}</td>
+                        <td data-col="6" data-val="${item.rawRates[5]}">${item.rates[5]}</td>
                     </tr>
                 `;
             });
@@ -1568,39 +1655,68 @@
 
         function highlightClosestSpecs(userBonusDenom, userEnjenDenom) {
             const rows = document.querySelectorAll('#spec-comparison-table tbody tr');
-            if (rows.length === 0) return;
+            if (rows.length > 0) {
+                rows.forEach(row => {
+                    const bonusTd = row.querySelector('[data-type="bonus"]');
+                    const enjenTd = row.querySelector('[data-type="enjen"]');
+                    if (bonusTd) bonusTd.classList.remove('highlight-spec');
+                    if (enjenTd) enjenTd.classList.remove('highlight-spec');
+                });
 
-            document.querySelectorAll('.highlight-spec').forEach(el => el.classList.remove('highlight-spec'));
+                let closestBonusRow = null;
+                let minBonusDiff = Infinity;
+                let closestEnjenRow = null;
+                let minEnjenDiff = Infinity;
 
-            let closestBonusRow = null;
-            let minBonusDiff = Infinity;
-            let closestEnjenRow = null;
-            let minEnjenDiff = Infinity;
+                rows.forEach(row => {
+                    const bonusTd = row.querySelector('[data-type="bonus"]');
+                    const enjenTd = row.querySelector('[data-type="enjen"]');
+                    const specBonus = parseFloat(bonusTd.getAttribute('data-val'));
+                    const specEnjen = parseFloat(enjenTd.getAttribute('data-val'));
 
-            rows.forEach(row => {
-                const bonusTd = row.querySelector('[data-type="bonus"]');
-                const enjenTd = row.querySelector('[data-type="enjen"]');
-                const specBonus = parseFloat(bonusTd.getAttribute('data-val'));
-                const specEnjen = parseFloat(enjenTd.getAttribute('data-val'));
-
-                if (!isNaN(userBonusDenom)) {
-                    const diffBonus = Math.abs(specBonus - userBonusDenom);
-                    if (diffBonus < minBonusDiff) {
-                        minBonusDiff = diffBonus;
-                        closestBonusRow = bonusTd;
+                    if (!isNaN(userBonusDenom)) {
+                        const diffBonus = Math.abs(specBonus - userBonusDenom);
+                        if (diffBonus < minBonusDiff) {
+                            minBonusDiff = diffBonus;
+                            closestBonusRow = bonusTd;
+                        }
                     }
-                }
-                if (!isNaN(userEnjenDenom)) {
-                    const diffEnjen = Math.abs(specEnjen - userEnjenDenom);
-                    if (diffEnjen < minEnjenDiff) {
-                        minEnjenDiff = diffEnjen;
-                        closestEnjenRow = enjenTd;
+                    if (!isNaN(userEnjenDenom)) {
+                        const diffEnjen = Math.abs(specEnjen - userEnjenDenom);
+                        if (diffEnjen < minEnjenDiff) {
+                            minEnjenDiff = diffEnjen;
+                            closestEnjenRow = enjenTd;
+                        }
                     }
-                }
+                });
+
+                if (closestBonusRow) closestBonusRow.classList.add('highlight-spec');
+                if (closestEnjenRow) closestEnjenRow.classList.add('highlight-spec');
+            }
+
+            const analysisTables = document.querySelectorAll('.analysis-table');
+            analysisTables.forEach(table => {
+                const trs = table.querySelectorAll('tbody tr');
+                trs.forEach(tr => {
+                    const tds = tr.querySelectorAll('[data-col]');
+                    if (tds.length === 0) return;
+                    
+                    tds.forEach(td => td.classList.remove('highlight-spec'));
+
+                    let maxVal = -1;
+                    let targetTd = null;
+                    tds.forEach(td => {
+                        const val = parseFloat(td.getAttribute('data-val'));
+                        if (!isNaN(val) && val > maxVal && val > 0.001) {
+                            maxVal = val;
+                            targetTd = td;
+                        }
+                    });
+                    if (targetTd) {
+                        targetTd.classList.add('highlight-spec');
+                    }
+                });
             });
-
-            if (closestBonusRow) closestBonusRow.classList.add('highlight-spec');
-            if (closestEnjenRow) closestEnjenRow.classList.add('highlight-spec');
         }
     </script>
 </body>
