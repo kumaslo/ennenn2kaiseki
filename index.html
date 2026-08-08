@@ -383,7 +383,7 @@
         <header class="app-header">
             <h1>炎炎ノ消防隊2</h1>
             <div class="header-info">
-                <span class="version-badge">Ver.1.1.4</span>
+                <span class="version-badge">Ver.1.2.0</span>
                 <span id="access-counter" class="counter-badge">👁️ --- views</span>
             </div>
         </header>
@@ -601,8 +601,20 @@
             </section>
 
             <section id="tab-settings" class="tab-content">
-                <h2>設定・データ管理</h2>
-                <button id="btn-export" class="btn-secondary">データエクスポート</button>
+                <h2>実戦レポート ＆ データ管理</h2>
+                
+                <div class="calc-card" style="margin-bottom: 12px;">
+                    <h3>📋 実戦レポート生成</h3>
+                    <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">現在の実戦結果と設定推測結果をテキスト形式でまとめて出力します。</p>
+                    
+                    <textarea id="report-text-output" readonly style="width: 100%; height: 160px; background: #0a0a0a; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 0.78rem; padding: 8px; font-family: monospace; margin-bottom: 8px; resize: none;"></textarea>
+                    
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <button type="button" id="btn-copy-report" class="btn-primary" style="margin-top:0;">📋 テキストをコピー</button>
+                        <button type="button" id="btn-mail-report" class="btn-secondary" style="margin-top:0; margin-bottom:0;">✉️ メールで送る</button>
+                    </div>
+                </div>
+
                 <button id="btn-reset" class="btn-danger">全データリセット</button>
             </section>
         </main>
@@ -618,7 +630,7 @@
 
     <script>
         /* ==========================================
-           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.1.4)
+           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.2.0)
            ========================================== */
         const APP_DATA = {
             machineName: "L 炎炎ノ消防隊2",
@@ -684,6 +696,7 @@
 
         let bonusScreenHistory = [];
         let regHistory = [];
+        let currentInferencePercentages = [16, 16, 17, 17, 17, 17];
 
         document.addEventListener('DOMContentLoaded', () => {
             initTabs();
@@ -695,6 +708,7 @@
             updateCompleteness();
             updateResultDistributions();
             fetchAccessCounter();
+            updateReportText();
         });
 
         function triggerFlash(elementId) {
@@ -705,7 +719,6 @@
             el.classList.add('flash-active');
         }
 
-        // アクセス数カウンター取得API
         function fetchAccessCounter() {
             const counterEl = document.getElementById('access-counter');
             if (!counterEl) return;
@@ -896,6 +909,9 @@
                     tabContents.forEach(tab => tab.classList.remove('active'));
                     item.classList.add('active');
                     document.getElementById(targetId).classList.add('active');
+                    if (targetId === 'tab-settings') {
+                        updateReportText();
+                    }
                 });
             });
         }
@@ -946,6 +962,7 @@
                 updatedAt: new Date().toLocaleString()
             };
             localStorage.setItem('enjen2_memo', JSON.stringify(data));
+            updateReportText();
         }
 
         function renderScreenHistory() {
@@ -1016,12 +1033,13 @@
         }
 
         function setupEventListeners() {
-            const saveBtn = document.getElementById('btn-save-memo');
             const resetBtn = document.getElementById('btn-reset');
             const addScreenBtn = document.getElementById('btn-add-screen-history');
             const clearScreenBtn = document.getElementById('btn-clear-screen-history');
             const addRegBtn = document.getElementById('btn-add-reg-history');
             const clearRegBtn = document.getElementById('btn-clear-reg-history');
+            const copyReportBtn = document.getElementById('btn-copy-report');
+            const mailReportBtn = document.getElementById('btn-mail-report');
             
             const startGamesInput = document.getElementById('input-start-games');
             const currentGamesInput = document.getElementById('input-current-games');
@@ -1111,13 +1129,30 @@
                 });
             }
 
-            saveBtn.addEventListener('click', () => {
-                autoSaveMemo();
-                triggerFlash('app');
-                alert('実戦メモを保存しました！');
-                calculateStats();
-                updateResultDistributions();
-            });
+            if (copyReportBtn) {
+                copyReportBtn.addEventListener('click', () => {
+                    const text = generateReportText();
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert('実戦レポートをコピーしました！');
+                        }).catch(() => {
+                            prompt('以下のテキストをコピーしてください:', text);
+                        });
+                    } else {
+                        prompt('以下のテキストをコピーしてください:', text);
+                    }
+                });
+            }
+
+            if (mailReportBtn) {
+                mailReportBtn.addEventListener('click', () => {
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+                    const subject = encodeURIComponent(`炎炎ノ消防隊2コンパス 実戦レポート ${dateStr}`);
+                    const body = encodeURIComponent(generateReportText());
+                    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                });
+            }
 
             bonusInputs.forEach(input => {
                 input.addEventListener('input', () => {
@@ -1487,6 +1522,8 @@
                 percentages[maxIdx] += (100 - currentSum);
             }
 
+            currentInferencePercentages = percentages;
+
             let html = '';
             for (let i = 0; i < 6; i++) {
                 const pct = percentages[i];
@@ -1501,6 +1538,54 @@
                 `;
             }
             container.innerHTML = html;
+            updateReportText();
+        }
+
+        function generateReportText() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+            
+            const games = document.getElementById('input-games').value || '0';
+            const bonus = document.getElementById('input-bonus').value || '0';
+            const enjen = document.getElementById('input-enjen').value || '0';
+            const bonusProb = document.getElementById('calc-bonus-result').textContent;
+            const enjenProb = document.getElementById('calc-enjen-result').textContent;
+
+            const p = currentInferencePercentages;
+            const maxP = Math.max(...p);
+            const maxIdx = p.indexOf(maxP);
+            const mostLikely = `設定${maxIdx + 1} (${maxP}%)`;
+
+            let text = `━━━━━━━━━━━━━━\n`;
+            text += `炎炎ノ消防隊2コンパス\n`;
+            text += `実戦レポート\n`;
+            text += `${dateStr}\n`;
+            text += `━━━━━━━━━━━━━━\n\n`;
+
+            text += `【基本データ】\n`;
+            text += `通常ゲーム数：${games}G\n`;
+            text += `初当たりボーナス：${bonus}回 (${bonusProb})\n`;
+            text += `炎炎激闘初当たり：${enjen}回 (${enjenProb})\n\n`;
+
+            text += `【設定推測分布】\n`;
+            for (let i = 0; i < 6; i++) {
+                text += `設定${i+1}：${p[i]}%\n`;
+            }
+            text += `\n`;
+            text += `最有力：${mostLikely}\n\n`;
+
+            text += `━━━━━━━━━━━━━━\n`;
+            text += `炎炎ノ消防隊2コンパス\n`;
+            text += `━━━━━━━━━━━━━━`;
+
+            return text;
+        }
+
+        function updateReportText() {
+            const textarea = document.getElementById('report-text-output');
+            if (textarea) {
+                textarea.value = generateReportText();
+            }
         }
 
         function renderAnalysisData() {
@@ -1709,6 +1794,7 @@
                         const val = parseFloat(td.getAttribute('data-val'));
                         if (!isNaN(val) && val > maxVal && val > 0.001) {
                             maxVal = val;
+                            targetId = td;
                             targetTd = td;
                         }
                     });
