@@ -383,7 +383,7 @@
         <header class="app-header">
             <h1>炎炎ノ消防隊2</h1>
             <div class="header-info">
-                <span class="version-badge">Ver.1.2.2</span>
+                <span class="version-badge">Ver.1.2.3</span>
                 <span id="access-counter" class="counter-badge">👁️ --- views</span>
             </div>
         </header>
@@ -651,7 +651,7 @@
                     <h3>📋 実戦レポート生成</h3>
                     <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">現在の実戦結果と設定推測結果をテキスト形式でまとめて出力します。</p>
                     
-                    <textarea id="report-text-output" readonly style="width: 100%; height: 160px; background: #0a0a0a; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 0.78rem; padding: 8px; font-family: monospace; margin-bottom: 8px; resize: none;"></textarea>
+                    <textarea id="report-text-output" readonly style="width: 100%; height: 180px; background: #0a0a0a; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 0.78rem; padding: 8px; font-family: monospace; margin-bottom: 8px; resize: none;"></textarea>
                     
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <button type="button" id="btn-copy-report" class="btn-primary" style="margin-top:0;">📋 テキストをコピー</button>
@@ -674,7 +674,7 @@
 
     <script>
         /* ==========================================
-           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.2.2)
+           炎炎ノ消防隊2 アプリ用データおよびスクリプト (Ver.1.2.3)
            ========================================== */
         const APP_DATA = {
             machineName: "L 炎炎ノ消防隊2",
@@ -747,6 +747,8 @@
         let bonusScreenHistory = [];
         let regHistory = [];
         let currentInferencePercentages = [16, 16, 17, 17, 17, 17];
+        let currentScreenPercentages = [16, 16, 17, 17, 17, 17];
+        let currentRegPercentages = [16, 16, 17, 17, 17, 17];
 
         document.addEventListener('DOMContentLoaded', () => {
             initTabs();
@@ -1259,7 +1261,6 @@
         }
 
         function updateResultDistributions() {
-            // 伝導者の罠 集計更新
             const trapLip = parseInt(document.getElementById('input-trap-lip').value) || 0;
             const trapCross = parseInt(document.getElementById('input-trap-cross').value) || 0;
             const trapEpibo = parseInt(document.getElementById('input-trap-epibo').value) || 0;
@@ -1602,6 +1603,11 @@
                 }
             }
 
+            // 個別項目ごとの確率計算（レポート用）
+            calcBonusOnlyPercentages(games, bonus, enjen);
+            calcScreenPercentages();
+            calcRegPercentages();
+
             const totalLikelihood = likelihoods.reduce((a, b) => a + b, 0);
             let percentages = likelihoods.map(l => totalLikelihood > 0 ? Math.round((l / totalLikelihood) * 100) : 16);
 
@@ -1630,50 +1636,127 @@
             updateReportText();
         }
 
+        // 個別項目（ボーナス・初当たり）の推測分布計算
+        function calcBonusOnlyPercentages(games, bonus, enjen) {
+            const specs = APP_DATA.specs;
+            let l = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+            if (games > 100 && (bonus > 0 || enjen > 0)) {
+                const userBonusProb = games / (bonus || 1);
+                const userEnjenProb = games / (enjen || 1);
+                for (let i = 0; i < 6; i++) {
+                    const bDiff = Math.abs(specs.bonusProb[i] - userBonusProb) / specs.bonusProb[i];
+                    const eDiff = Math.abs(specs.enjenProb[i] - userEnjenProb) / specs.enjenProb[i];
+                    l[i] *= Math.max(0.01, Math.exp(-bDiff * 3) * Math.exp(-eDiff * 2));
+                }
+            }
+            const total = l.reduce((a, b) => a + b, 0);
+            window.bonusOnlyPct = l.map(val => total > 0 ? Math.round((val / total) * 100) : 16);
+        }
+
+        // 個別項目（終了画面）の推測分布計算
+        function calcScreenPercentages() {
+            let l = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+            if (bonusScreenHistory.length > 0) {
+                bonusScreenHistory.forEach(item => {
+                    const screenIdx = APP_DATA.screenAnalysis.screenNames.indexOf(item.screenType);
+                    if (screenIdx !== -1) {
+                        const rawRates = (item.bonusType === "炎炎ボーナス") 
+                            ? APP_DATA.screenAnalysis.enrenRawRates[screenIdx] 
+                            : APP_DATA.screenAnalysis.accelRawRates[screenIdx];
+                        for (let i = 0; i < 6; i++) {
+                            l[i] *= Math.max(0.0001, rawRates[i]);
+                        }
+                    }
+                });
+            }
+            const total = l.reduce((a, b) => a + b, 0);
+            window.screenOnlyPct = l.map(val => total > 0 ? Math.round((val / total) * 100) : 16);
+        }
+
+        // 個別項目（REGキャラ）の推測分布計算
+        function calcRegPercentages() {
+            let l = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+            if (regHistory.length > 0) {
+                regHistory.forEach(item => {
+                    const charObj = APP_DATA.regCharacters.find(c => c.scenario === item.scenario);
+                    if (charObj && charObj.rawRates) {
+                        for (let i = 0; i < 6; i++) {
+                            l[i] *= Math.max(0.0001, charObj.rawRates[i]);
+                        }
+                    }
+                });
+            }
+            const total = l.reduce((a, b) => a + b, 0);
+            window.regOnlyPct = l.map(val => total > 0 ? Math.round((val / total) * 100) : 16);
+        }
+
         function generateReportText() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
             
             const games = document.getElementById('input-games').value || '0';
             const bonus = document.getElementById('input-bonus').value || '0';
-            const enjen = document.getElementById('input-enjen').value || '0';
             const bonusProb = document.getElementById('calc-bonus-result').textContent;
+            const enjen = document.getElementById('input-enjen').value || '0';
             const enjenProb = document.getElementById('calc-enjen-result').textContent;
             
             const trapLip = document.getElementById('input-trap-lip').value || '0';
-            const trapCrossRate = document.getElementById('calc-trap-cross-rate').textContent;
-            const trapEpiboRate = document.getElementById('calc-trap-epibo-rate').textContent;
+            const trapCross = document.getElementById('input-trap-cross').value || '0';
+            const trapEpibo = document.getElementById('input-trap-epibo').value || '0';
 
             const p = currentInferencePercentages;
             const maxP = Math.max(...p);
             const maxIdx = p.indexOf(maxP);
-            const mostLikely = `設定${maxIdx + 1} (${maxP}%)`;
+            const mostLikely = `設定${maxIdx + 1}`;
+
+            const bPct = window.bonusOnlyPct || [16,16,17,17,17,17];
+            const sPct = window.screenOnlyPct || [16,16,17,17,17,17];
+            const rPct = window.regOnlyPct || [16,16,17,17,17,17];
 
             let text = `━━━━━━━━━━━━━━\n`;
-            text += `炎炎ノ消防隊2コンパス\n`;
+            text += `🔥 炎炎ノ消防隊2コンパス\n`;
             text += `実戦レポート\n`;
             text += `${dateStr}\n`;
             text += `━━━━━━━━━━━━━━\n\n`;
 
-            text += `【基本データ】\n`;
+            text += `【実戦データ】\n`;
             text += `通常ゲーム数：${games}G\n`;
-            text += `初当たりボーナス：${bonus}回 (${bonusProb})\n`;
-            text += `炎炎激闘初当たり：${enjen}回 (${enjenProb})\n\n`;
+            text += `ボーナス初当たり：${bonus}回\n`;
+            text += `初当たり確率：${bonusProb}\n`;
+            text += `炎炎激闘初当たり：${enjen}回\n`;
+            text += `炎炎激闘初当たり確率：${enjenProb}\n\n`;
 
-            text += `【伝導者の罠 集計】\n`;
-            text += `小Vリプ回数：${trapLip}回\n`;
-            text += `十字目変換発生：${trapCrossRate}\n`;
-            text += `エピボ突入率：${trapEpiboRate}\n\n`;
+            text += `【実戦値】\n`;
+            text += `小Vリプ：${trapLip}回\n`;
+            text += `十字目変換：${trapCross}回\n`;
+            text += `エピボ当選：${trapEpibo}回\n\n`;
 
-            text += `【設定推測分布】\n`;
+            text += `【設定推測】\n\n`;
+            text += `■ ボーナス初当たり\n`;
+            for (let i = 0; i < 6; i++) {
+                text += `設定${i+1}：${bPct[i]}%\n`;
+            }
+            text += `\n`;
+
+            text += `■ 終了画面\n`;
+            for (let i = 0; i < 6; i++) {
+                text += `設定${i+1}：${sPct[i]}%\n`;
+            }
+            text += `\n`;
+
+            text += `■ REGキャラ\n`;
+            for (let i = 0; i < 6; i++) {
+                text += `設定${i+1}：${rPct[i]}%\n`;
+            }
+            text += `\n`;
+
+            text += `【総合推測】\n`;
             for (let i = 0; i < 6; i++) {
                 text += `設定${i+1}：${p[i]}%\n`;
             }
             text += `\n`;
             text += `最有力：${mostLikely}\n\n`;
 
-            text += `━━━━━━━━━━━━━━\n`;
-            text += `炎炎ノ消防隊2コンパス\n`;
             text += `━━━━━━━━━━━━━━`;
 
             return text;
